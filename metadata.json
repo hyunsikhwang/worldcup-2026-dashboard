@@ -1,0 +1,6 @@
+{
+  "name": "2026 World Cup Bracket & Standings",
+  "description": "2026 FIFA World Cup real-time standings, match schedules, live updates, and tournament brackets utilizing a real official FIFA match feed and fallback simulator.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
