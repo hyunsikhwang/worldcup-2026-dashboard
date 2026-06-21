@@ -1156,22 +1156,22 @@ const initialMatches: Match[] = [
 // Generate initial empty bracket with proper matchup routes
 const generateBracket = (): BracketData => {
   const roundOf32 = [
-    { id: 'r32_1', stage: 'RoundOf32' as const, matchNumber: 1, homeTeam: 'A조 1위', awayTeam: 'C조 3위', date: '6월 28일', time: '04:00', nextMatchId: 'r16_1' },
-    { id: 'r32_2', stage: 'RoundOf32' as const, matchNumber: 2, homeTeam: 'B조 2위', awayTeam: 'F조 2위', date: '6월 28일', time: '07:30', nextMatchId: 'r16_1' },
-    { id: 'r32_3', stage: 'RoundOf32' as const, matchNumber: 3, homeTeam: 'C조 1위', awayTeam: 'F조 3위', date: '6월 29일', time: '04:00', nextMatchId: 'r16_2' },
-    { id: 'r32_4', stage: 'RoundOf32' as const, matchNumber: 4, homeTeam: 'D조 2위', awayTeam: 'G조 2위', date: '6월 29일', time: '07:30', nextMatchId: 'r16_2' },
-    { id: 'r32_5', stage: 'RoundOf32' as const, matchNumber: 5, homeTeam: 'E조 1위', awayTeam: 'I조 3위', date: '6월 30일', time: '04:00', nextMatchId: 'r16_3' },
-    { id: 'r32_6', stage: 'RoundOf32' as const, matchNumber: 6, homeTeam: 'F조 1위', awayTeam: 'K조 2위', date: '6월 30일', time: '07:30', nextMatchId: 'r16_3' },
-    { id: 'r32_7', stage: 'RoundOf32' as const, matchNumber: 7, homeTeam: 'G조 1위', awayTeam: 'J조 3위', date: '7월 1일', time: '04:00', nextMatchId: 'r16_4' },
-    { id: 'r32_8', stage: 'RoundOf32' as const, matchNumber: 8, homeTeam: 'H조 2위', awayTeam: 'L조 2위', date: '7월 1일', time: '07:30', nextMatchId: 'r16_4' },
-    { id: 'r32_9', stage: 'RoundOf32' as const, matchNumber: 9, homeTeam: 'I조 1위', awayTeam: 'A조 3위', date: '7월 2일', time: '04:00', nextMatchId: 'r16_5' },
-    { id: 'r32_10', stage: 'RoundOf32' as const, matchNumber: 10, homeTeam: 'J조 1위', awayTeam: 'D조 3위', date: '7월 2일', time: '07:30', nextMatchId: 'r16_5' },
-    { id: 'r32_11', stage: 'RoundOf32' as const, matchNumber: 11, homeTeam: 'K조 1위', awayTeam: 'E조 3위', date: '7월 3일', time: '04:00', nextMatchId: 'r16_6' },
-    { id: 'r32_12', stage: 'RoundOf32' as const, matchNumber: 12, homeTeam: 'L조 1위', awayTeam: 'H조 3위', date: '7월 3일', time: '07:30', nextMatchId: 'r16_6' },
-    { id: 'r32_13', stage: 'RoundOf32' as const, matchNumber: 13, homeTeam: 'B조 1위', awayTeam: 'E조 2위', date: '7월 4일', time: '04:00', nextMatchId: 'r16_7' },
-    { id: 'r32_14', stage: 'RoundOf32' as const, matchNumber: 14, homeTeam: 'D조 1위', awayTeam: 'I조 2위', date: '7월 4일', time: '07:30', nextMatchId: 'r16_7' },
-    { id: 'r32_15', stage: 'RoundOf32' as const, matchNumber: 15, homeTeam: 'H조 1위', awayTeam: 'J조 2위', date: '7월 5일', time: '04:00', nextMatchId: 'r16_8' },
-    { id: 'r32_16', stage: 'RoundOf32' as const, matchNumber: 16, homeTeam: 'A조 2위', awayTeam: 'C조 2위', date: '7월 5일', time: '07:30', nextMatchId: 'r16_8' }
+    { id: 'r32_1', stage: 'RoundOf32' as const, matchNumber: 1, homeTeam: 'A조 2위', awayTeam: 'B조 2위', date: '6월 29일', time: '04:00', nextMatchId: 'r16_1' },
+    { id: 'r32_2', stage: 'RoundOf32' as const, matchNumber: 2, homeTeam: 'B조 1위', awayTeam: 'EFGIJ조 3위', date: '7월 3일', time: '12:00', nextMatchId: 'r16_1' },
+    { id: 'r32_3', stage: 'RoundOf32' as const, matchNumber: 3, homeTeam: 'E조 1위', awayTeam: 'ABCDF조 3위', date: '6월 30일', time: '05:30', nextMatchId: 'r16_2' },
+    { id: 'r32_4', stage: 'RoundOf32' as const, matchNumber: 4, homeTeam: 'I조 1위', awayTeam: 'CDFGH조 3위', date: '7월 1일', time: '06:00', nextMatchId: 'r16_2' },
+    { id: 'r32_5', stage: 'RoundOf32' as const, matchNumber: 5, homeTeam: 'K조 2위', awayTeam: 'L조 2위', date: '7월 3일', time: '08:00', nextMatchId: 'r16_3' },
+    { id: 'r32_6', stage: 'RoundOf32' as const, matchNumber: 6, homeTeam: 'H조 1위', awayTeam: 'J조 2위', date: '7월 3일', time: '04:00', nextMatchId: 'r16_3' },
+    { id: 'r32_7', stage: 'RoundOf32' as const, matchNumber: 7, homeTeam: 'D조 1위', awayTeam: 'BEFIJ조 3위', date: '7월 2일', time: '09:00', nextMatchId: 'r16_4' },
+    { id: 'r32_8', stage: 'RoundOf32' as const, matchNumber: 8, homeTeam: 'G조 1위', awayTeam: 'AEHIJ조 3위', date: '7월 2일', time: '05:00', nextMatchId: 'r16_4' },
+    { id: 'r32_9', stage: 'RoundOf32' as const, matchNumber: 9, homeTeam: 'C조 1위', awayTeam: 'F조 2위', date: '6월 30일', time: '02:00', nextMatchId: 'r16_5' },
+    { id: 'r32_10', stage: 'RoundOf32' as const, matchNumber: 10, homeTeam: 'E조 2위', awayTeam: 'I조 2위', date: '7월 1일', time: '02:00', nextMatchId: 'r16_5' },
+    { id: 'r32_11', stage: 'RoundOf32' as const, matchNumber: 11, homeTeam: 'A조 1위', awayTeam: 'CEFHI조 3위', date: '7월 1일', time: '10:00', nextMatchId: 'r16_6' },
+    { id: 'r32_12', stage: 'RoundOf32' as const, matchNumber: 12, homeTeam: 'L조 1위', awayTeam: 'EHIJK조 3위', date: '7월 2일', time: '01:00', nextMatchId: 'r16_6' },
+    { id: 'r32_13', stage: 'RoundOf32' as const, matchNumber: 13, homeTeam: 'J조 1위', awayTeam: 'H조 2위', date: '7월 4일', time: '07:00', nextMatchId: 'r16_7' },
+    { id: 'r32_14', stage: 'RoundOf32' as const, matchNumber: 14, homeTeam: 'D조 2위', awayTeam: 'G조 2위', date: '7월 4일', time: '03:00', nextMatchId: 'r16_7' },
+    { id: 'r32_15', stage: 'RoundOf32' as const, matchNumber: 15, homeTeam: 'K조 1위', awayTeam: 'DEIJL조 3위', date: '7월 4일', time: '10:30', nextMatchId: 'r16_8' },
+    { id: 'r32_16', stage: 'RoundOf32' as const, matchNumber: 16, homeTeam: 'F조 1위', awayTeam: 'C조 2위', date: '6월 30일', time: '10:00', nextMatchId: 'r16_8' }
   ];
 
   const roundOf16 = Array.from({ length: 8 }, (_, idx) => ({

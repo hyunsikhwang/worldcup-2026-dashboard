@@ -382,107 +382,6 @@ export default function App() {
               </div>
             </div>
 
-            {/* 3위 와일드카드 실시간 종합 순위표 Section */}
-            {selectedGroupFilter === 'ALL' && !searchTerm && (
-              <div className="bg-white rounded-2xl border border-slate-200 shadow-sm p-5 animate-fade-in" id="wildcard-ranking-section">
-                <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-4 pb-4 border-b border-slate-100">
-                  <div className="flex items-center gap-2">
-                    <div className="bg-amber-100/70 border border-amber-200 text-amber-800 p-2 rounded-xl">
-                      <Trophy className="w-5 h-5 text-amber-600" />
-                    </div>
-                    <div>
-                      <h3 className="text-sm font-black text-slate-800 flex items-center gap-2">
-                        각 조 3위 팀간 와일드카드 실시간 종합 순위표
-                      </h3>
-                      <p className="text-[11px] text-slate-500 mt-0.5">
-                        12개 조의 3위 팀 중 <strong className="text-amber-700">상위 8개 팀</strong>이 본선 32강에 와일드카드로 진출하며, 하위 4개 팀은 탈락합니다.
-                      </p>
-                    </div>
-                  </div>
-                  <div className="text-[10px] text-slate-500 bg-slate-50 border border-slate-150 px-2.5 py-1.5 rounded-lg flex items-center gap-1.5 font-mono shrink-0">
-                    <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
-                    <span>순위 기준: 승점 → 골득실 → 다득점 → 소속조 순</span>
-                  </div>
-                </div>
-
-                <div className="overflow-x-auto">
-                  <table className="w-full text-left text-xs">
-                    <thead>
-                      <tr className="bg-slate-50 border-b border-slate-100 text-slate-500 font-bold">
-                        <th className="py-2 px-3 text-center w-12 text-[10px] uppercase tracking-wider">순위</th>
-                        <th className="py-2 px-3 text-center w-14 text-[10px] uppercase tracking-wider">소속 조</th>
-                        <th className="py-2 px-4 text-left text-[10px] uppercase tracking-wider">국가명</th>
-                        <th className="py-2 px-2 text-center w-10 text-[10px] uppercase tracking-wider">경기</th>
-                        <th className="py-2 px-2 text-center w-10 text-[10px] uppercase tracking-wider">승</th>
-                        <th className="py-2 px-2 text-center w-10 text-[10px] uppercase tracking-wider">무</th>
-                        <th className="py-2 px-2 text-center w-10 text-[10px] uppercase tracking-wider">패</th>
-                        <th className="py-2 px-2 text-center w-16 text-[10px] uppercase tracking-wider">득/실</th>
-                        <th className="py-2 px-2 text-center w-16 text-[10px] uppercase tracking-wider">골득실</th>
-                        <th className="py-2 px-3 text-center font-bold text-amber-700 bg-amber-50/40 w-16 text-[10px] uppercase tracking-wider">승점</th>
-                        <th className="py-2 px-4 text-center w-28 text-[10px] uppercase tracking-wider">본선 진출상태</th>
-                      </tr>
-                    </thead>
-                    <tbody className="divide-y divide-slate-100 text-slate-700">
-                      {getThirdPlaceStandings(data.groups).map((item, index) => {
-                        const rank = index + 1;
-                        const isQualified = rank <= 8;
-                        const team = item.team;
-                        const isKorea = team.name.includes('대한민국');
-
-                        return (
-                          <tr 
-                            key={item.groupLetter} 
-                            className={`hover:bg-slate-50/50 transition-colors ${
-                              isKorea ? 'bg-rose-50/40' : (isQualified ? 'bg-emerald-50/5' : 'bg-rose-50/5')
-                            }`}
-                          >
-                            <td className="py-2.5 px-3 text-center">
-                              <span className={`inline-flex items-center justify-center w-5 h-5 rounded-full text-[10px] font-black ${
-                                isQualified 
-                                  ? 'bg-emerald-100 text-emerald-800' 
-                                  : 'bg-rose-100 text-rose-800'
-                              }`}>
-                                {rank}
-                              </span>
-                            </td>
-                            <td className="py-2.5 px-3 text-center font-bold text-slate-500">{item.groupLetter}조</td>
-                            <td className="py-2.5 px-4 font-bold text-slate-800">
-                              <div className="flex items-center gap-1.5">
-                                <span className="text-sm shrink-0">{getCountryFlag(team.name)}</span>
-                                <span className={isKorea ? 'text-rose-700 font-extrabold underline decoration-rose-300' : ''}>{team.name}</span>
-                              </div>
-                            </td>
-                            <td className="py-2.5 px-2 text-center">{team.played}</td>
-                            <td className="py-2.5 px-2 text-center text-slate-500">{team.won}</td>
-                            <td className="py-2.5 px-2 text-center text-slate-500">{team.drawn}</td>
-                            <td className="py-2.5 px-2 text-center text-slate-500">{team.lost}</td>
-                            <td className="py-2.5 px-2 text-center font-mono text-slate-400">{team.gf}/{team.ga}</td>
-                            <td className="py-2.5 px-2 text-center font-mono font-bold text-slate-600">
-                              {team.gd > 0 ? `+${team.gd}` : team.gd}
-                            </td>
-                            <td className="py-2.5 px-3 text-center font-black text-amber-800 bg-amber-50/20">
-                              {team.points}
-                            </td>
-                            <td className="py-2.5 px-4 text-center">
-                              {isQualified ? (
-                                <span className="inline-flex items-center gap-1 text-[9px] bg-emerald-500/10 text-emerald-700 font-extrabold px-2 py-0.5 rounded-full border border-emerald-500/20 whitespace-nowrap">
-                                  <Check className="w-2.5 h-2.5" /> 32강 본선 진출
-                                </span>
-                              ) : (
-                                <span className="inline-flex items-center gap-1 text-[9px] bg-rose-500/10 text-rose-700 font-extrabold px-2 py-0.5 rounded-full border border-rose-500/20 whitespace-nowrap">
-                                  예선 탈락 대상
-                                </span>
-                              )}
-                            </td>
-                          </tr>
-                        );
-                      })}
-                    </tbody>
-                  </table>
-                </div>
-              </div>
-            )}
-
             {/* Groups Grid */}
             <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6" id="groups-standings-grid">
               {filteredGroups.map(group => {
@@ -651,21 +550,199 @@ export default function App() {
                                 <td className="py-3 px-1 text-center text-slate-600">{team.drawn}</td>
                                 <td className="py-3 px-1 text-center text-slate-600">{team.lost}</td>
                                 <td className="py-3 px-1 text-center font-mono text-xs text-slate-500 font-medium whitespace-nowrap">
-                                  {team.gd > 0 ? `+${team.gd}` : team.gd}
-                                </td>
-                                <td className="py-3 px-2.5 text-center font-extrabold text-slate-900 bg-slate-50/20 whitespace-nowrap">
-                                  {team.points}
-                                </td>
-                              </tr>
-                            );
-                          })}
-                        </tbody>
-                      </table>
+                                   {team.gd > 0 ? `+${team.gd}` : team.gd}
+                                 </td>
+                                 <td className="py-3 px-2.5 text-center font-extrabold text-slate-900 bg-slate-50/20 whitespace-nowrap">
+                                   {team.points}
+                                 </td>
+                               </tr>
+                             );
+                           })}
+                         </tbody>
+                       </table>
+                     </div>
+                   </div>
+                 );
+               })}
+             </div>
+
+             {/* 3위 와일드카드 실시간 종합 순위표 Section */}
+             {selectedGroupFilter === 'ALL' && !searchTerm && (
+              <div className="bg-white rounded-2xl border border-slate-200 shadow-sm p-5 animate-fade-in mt-6" id="wildcard-ranking-section">
+                <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-4 pb-4 border-b border-slate-100">
+                  <div className="flex items-center gap-2">
+                    <div className="bg-amber-100/70 border border-amber-200 text-amber-800 p-2 rounded-xl">
+                      <Trophy className="w-5 h-5 text-amber-600" />
+                    </div>
+                    <div>
+                      <h3 className="text-sm font-black text-slate-800 flex items-center gap-2">
+                        각 조 3위 팀간 와일드카드 실시간 종합 순위표
+                      </h3>
+                      <p className="text-[11px] text-slate-500 mt-0.5">
+                        12개 조의 3위 팀 중 <strong className="text-amber-700">상위 8개 팀</strong>이 본선 32강에 와일드카드로 진출하며, 하위 4개 팀은 탈락합니다.
+                      </p>
                     </div>
                   </div>
-                );
-              })}
-            </div>
+                  <div className="text-[10px] text-slate-500 bg-slate-50 border border-slate-150 px-2.5 py-1.5 rounded-lg flex items-center gap-1.5 font-mono shrink-0">
+                    <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
+                    <span>순위 기준: 승점 → 골득실 → 다득점 → 소속조 순</span>
+                  </div>
+                </div>
+
+                {/* Desktop/Tablet Table Layout */}
+                <div className="hidden sm:block overflow-x-auto">
+                  <table className="w-full text-left text-xs">
+                    <thead>
+                      <tr className="bg-slate-50 border-b border-slate-100 text-slate-500 font-bold">
+                        <th className="py-2 px-3 text-center w-12 text-[10px] uppercase tracking-wider">순위</th>
+                        <th className="py-2 px-3 text-center w-14 text-[10px] uppercase tracking-wider">소속 조</th>
+                        <th className="py-2 px-4 text-left text-[10px] uppercase tracking-wider">국가명</th>
+                        <th className="py-2 px-2 text-center w-10 text-[10px] uppercase tracking-wider">경기</th>
+                        <th className="py-2 px-2 text-center w-10 text-[10px] uppercase tracking-wider">승</th>
+                        <th className="py-2 px-2 text-center w-10 text-[10px] uppercase tracking-wider">무</th>
+                        <th className="py-2 px-2 text-center w-10 text-[10px] uppercase tracking-wider">패</th>
+                        <th className="py-2 px-2 text-center w-16 text-[10px] uppercase tracking-wider">득/실</th>
+                        <th className="py-2 px-2 text-center w-16 text-[10px] uppercase tracking-wider">골득실</th>
+                        <th className="py-2 px-3 text-center font-bold text-amber-700 bg-amber-50/40 w-16 text-[10px] uppercase tracking-wider">승점</th>
+                        <th className="py-2 px-4 text-center w-28 text-[10px] uppercase tracking-wider">본선 진출상태</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-slate-100 text-slate-700">
+                      {getThirdPlaceStandings(data.groups).map((item, index) => {
+                        const rank = index + 1;
+                        const isQualified = rank <= 8;
+                        const team = item.team;
+                        const isKorea = team.name.includes('대한민국');
+
+                        return (
+                          <tr 
+                            key={item.groupLetter} 
+                            className={`hover:bg-slate-50/50 transition-colors ${
+                              isKorea ? 'bg-rose-50/40' : (isQualified ? 'bg-emerald-50/5' : 'bg-rose-50/5')
+                            }`}
+                          >
+                            <td className="py-2.5 px-3 text-center">
+                              <span className={`inline-flex items-center justify-center w-5 h-5 rounded-full text-[10px] font-black ${
+                                isQualified 
+                                  ? 'bg-emerald-100 text-emerald-800' 
+                                  : 'bg-rose-100 text-rose-800'
+                              }`}>
+                                {rank}
+                              </span>
+                            </td>
+                            <td className="py-2.5 px-3 text-center font-bold text-slate-500">{item.groupLetter}조</td>
+                            <td className="py-2.5 px-4 font-bold text-slate-800">
+                              <div className="flex items-center gap-1.5">
+                                <span className="text-sm shrink-0">{getCountryFlag(team.name)}</span>
+                                <span className={isKorea ? 'text-rose-700 font-extrabold underline decoration-rose-300' : ''}>{team.name}</span>
+                              </div>
+                            </td>
+                            <td className="py-2.5 px-2 text-center">{team.played}</td>
+                            <td className="py-2.5 px-2 text-center text-slate-500">{team.won}</td>
+                            <td className="py-2.5 px-2 text-center text-slate-500">{team.drawn}</td>
+                            <td className="py-2.5 px-2 text-center text-slate-500">{team.lost}</td>
+                            <td className="py-2.5 px-2 text-center font-mono text-slate-400">{team.gf}/{team.ga}</td>
+                            <td className="py-2.5 px-2 text-center font-mono font-bold text-slate-600">
+                              {team.gd > 0 ? `+${team.gd}` : team.gd}
+                            </td>
+                            <td className="py-2.5 px-3 text-center font-black text-amber-800 bg-amber-50/25">
+                              {team.points}
+                            </td>
+                            <td className="py-2.5 px-4 text-center">
+                              {isQualified ? (
+                                <span className="inline-flex items-center gap-1 text-[9px] bg-emerald-500/10 text-emerald-700 font-extrabold px-2 py-0.5 rounded-full border border-emerald-500/20 whitespace-nowrap">
+                                  <Check className="w-2.5 h-2.5" /> 32강 본선 진출
+                                </span>
+                              ) : (
+                                <span className="inline-flex items-center gap-1 text-[9px] bg-rose-500/10 text-rose-700 font-extrabold px-2 py-0.5 rounded-full border border-rose-500/20 whitespace-nowrap">
+                                  예선 탈락 대상
+                                </span>
+                              )}
+                            </td>
+                          </tr>
+                        );
+                      })}
+                    </tbody>
+                  </table>
+                </div>
+
+                {/* Mobile Card-based Layout */}
+                <div className="block sm:hidden space-y-3" id="wildcard-mobile-list">
+                  {getThirdPlaceStandings(data.groups).map((item, index) => {
+                    const rank = index + 1;
+                    const isQualified = rank <= 8;
+                    const team = item.team;
+                    const isKorea = team.name.includes('대한민국');
+
+                    return (
+                      <div 
+                        key={item.groupLetter} 
+                        className={`p-3.5 rounded-xl border transition-all ${
+                          isKorea 
+                            ? 'bg-rose-50/50 border-rose-200 shadow-xs' 
+                            : (isQualified ? 'bg-emerald-50/10 border-slate-150 shadow-xs' : 'bg-slate-50/40 border-slate-150')
+                        }`}
+                      >
+                        {/* Header bar with rank, country name, and status */}
+                        <div className="flex items-center justify-between mb-2.5 gap-2">
+                          <div className="flex items-center gap-1.5 min-w-0">
+                            <span className={`inline-flex items-center justify-center w-5 h-5 rounded-full text-[10px] font-black shrink-0 ${
+                              isQualified 
+                                ? 'bg-emerald-100 text-emerald-800' 
+                                : 'bg-rose-100 text-rose-800'
+                            }`}>
+                              {rank}
+                            </span>
+                            <span className="text-[11px] font-bold text-slate-500 shrink-0">{item.groupLetter}조</span>
+                            <div className="flex items-center gap-1 min-w-0">
+                              <span className="text-base shrink-0">{getCountryFlag(team.name)}</span>
+                              <span className={`text-xs font-black truncate ${isKorea ? 'text-rose-700 underline decoration-rose-300' : 'text-slate-800'}`}>
+                                {team.name}
+                              </span>
+                            </div>
+                          </div>
+                          <div className="shrink-0">
+                            {isQualified ? (
+                              <span className="inline-flex items-center gap-0.5 text-[9px] bg-emerald-500/10 text-emerald-700 font-extrabold px-2 py-0.5 rounded-full border border-emerald-500/15 whitespace-nowrap">
+                                <Check className="w-2 h-2" /> 32강 진출
+                              </span>
+                            ) : (
+                              <span className="inline-flex items-center gap-0.5 text-[9px] bg-rose-500/10 text-rose-700 font-extrabold px-2 py-0.5 rounded-full border border-rose-500/15 whitespace-nowrap">
+                                탈락 대상
+                              </span>
+                            )}
+                          </div>
+                        </div>
+
+                        {/* Dense Mobile Stats Grid */}
+                        <div className="grid grid-cols-4 gap-1.5 pt-2 border-t border-slate-100 text-center font-mono animate-fade-in">
+                          <div className="bg-slate-50/60 rounded py-1 px-1">
+                            <div className="text-[8px] text-slate-400 font-sans leading-none mb-1">경기</div>
+                            <div className="text-xs text-slate-700 font-extrabold">{team.played}</div>
+                          </div>
+                          <div className="bg-slate-50/60 rounded py-1 px-1">
+                            <div className="text-[8px] text-slate-400 font-sans leading-none mb-1">승-무-패</div>
+                            <div className="text-xs text-slate-700 font-bold">{team.won}-{team.drawn}-{team.lost}</div>
+                          </div>
+                          <div className="bg-slate-50/60 rounded py-1 px-1">
+                            <div className="text-[8px] text-slate-400 font-sans leading-none mb-1">득/실 (득실차)</div>
+                            <div className="text-xs text-slate-700 font-bold whitespace-nowrap">
+                              {team.gf}/{team.ga} <span className={`text-[10px] font-black ${team.gd > 0 ? 'text-emerald-600' : team.gd < 0 ? 'text-rose-600' : 'text-slate-400'}`}>
+                                ({team.gd > 0 ? `+${team.gd}` : team.gd})
+                              </span>
+                            </div>
+                          </div>
+                          <div className="bg-amber-50/50 rounded py-1 px-1 border border-amber-100/30">
+                            <div className="text-[8px] text-amber-700 font-sans font-bold leading-none mb-1">승점</div>
+                            <div className="text-xs font-black text-amber-800">{team.points}점</div>
+                          </div>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+            )}
           </div>
         )}
 
@@ -1073,22 +1150,22 @@ export default function App() {
                     const updated = { ...data };
                     updated.bracket = {
                       roundOf32: [
-                        { id: 'r32_1', stage: 'RoundOf32' as const, matchNumber: 1, homeTeam: 'A조 1위', awayTeam: 'C조 3위', date: '6월 28일', time: '04:00', nextMatchId: 'r16_1', winner: undefined },
-                        { id: 'r32_2', stage: 'RoundOf32' as const, matchNumber: 2, homeTeam: 'B조 2위', awayTeam: 'F조 2위', date: '6월 28일', time: '07:30', nextMatchId: 'r16_1', winner: undefined },
-                        { id: 'r32_3', stage: 'RoundOf32' as const, matchNumber: 3, homeTeam: 'C조 1위', awayTeam: 'F조 3위', date: '6월 29일', time: '04:00', nextMatchId: 'r16_2', winner: undefined },
-                        { id: 'r32_4', stage: 'RoundOf32' as const, matchNumber: 4, homeTeam: 'D조 2위', awayTeam: 'G조 2위', date: '6월 29일', time: '07:30', nextMatchId: 'r16_2', winner: undefined },
-                        { id: 'r32_5', stage: 'RoundOf32' as const, matchNumber: 5, homeTeam: 'E조 1위', awayTeam: 'I조 3위', date: '6월 30일', time: '04:00', nextMatchId: 'r16_3', winner: undefined },
-                        { id: 'r32_6', stage: 'RoundOf32' as const, matchNumber: 6, homeTeam: 'F조 1위', awayTeam: 'K조 2위', date: '6월 30일', time: '07:30', nextMatchId: 'r16_3', winner: undefined },
-                        { id: 'r32_7', stage: 'RoundOf32' as const, matchNumber: 7, homeTeam: 'G조 1위', awayTeam: 'J조 3위', date: '7월 1일', time: '04:00', nextMatchId: 'r16_4', winner: undefined },
-                        { id: 'r32_8', stage: 'RoundOf32' as const, matchNumber: 8, homeTeam: 'H조 2위', awayTeam: 'L조 2위', date: '7월 1일', time: '07:30', nextMatchId: 'r16_4', winner: undefined },
-                        { id: 'r32_9', stage: 'RoundOf32' as const, matchNumber: 9, homeTeam: 'I조 1위', awayTeam: 'A조 3위', date: '7월 2일', time: '04:00', nextMatchId: 'r16_5', winner: undefined },
-                        { id: 'r32_10', stage: 'RoundOf32' as const, matchNumber: 10, homeTeam: 'J조 1위', awayTeam: 'D조 3위', date: '7월 2일', time: '07:30', nextMatchId: 'r16_5', winner: undefined },
-                        { id: 'r32_11', stage: 'RoundOf32' as const, matchNumber: 11, homeTeam: 'K조 1위', awayTeam: 'E조 3위', date: '7월 3일', time: '04:00', nextMatchId: 'r16_6', winner: undefined },
-                        { id: 'r32_12', stage: 'RoundOf32' as const, matchNumber: 12, homeTeam: 'L조 1위', awayTeam: 'H조 3위', date: '7월 3일', time: '07:30', nextMatchId: 'r16_6', winner: undefined },
-                        { id: 'r32_13', stage: 'RoundOf32' as const, matchNumber: 13, homeTeam: 'B조 1위', awayTeam: 'E조 2위', date: '7월 4일', time: '04:00', nextMatchId: 'r16_7', winner: undefined },
-                        { id: 'r32_14', stage: 'RoundOf32' as const, matchNumber: 14, homeTeam: 'D조 1위', awayTeam: 'I조 2위', date: '7월 4일', time: '07:30', nextMatchId: 'r16_7', winner: undefined },
-                        { id: 'r32_15', stage: 'RoundOf32' as const, matchNumber: 15, homeTeam: 'H조 1위', awayTeam: 'J조 2위', date: '7월 5일', time: '04:00', nextMatchId: 'r16_8', winner: undefined },
-                        { id: 'r32_16', stage: 'RoundOf32' as const, matchNumber: 16, homeTeam: 'A조 2위', awayTeam: 'C조 2위', date: '7월 5일', time: '07:30', nextMatchId: 'r16_8', winner: undefined }
+                        { id: 'r32_1', stage: 'RoundOf32' as const, matchNumber: 1, homeTeam: 'A조 2위', awayTeam: 'B조 2위', date: '6월 29일', time: '04:00', nextMatchId: 'r16_1', winner: undefined },
+                        { id: 'r32_2', stage: 'RoundOf32' as const, matchNumber: 2, homeTeam: 'B조 1위', awayTeam: 'EFGIJ조 3위', date: '7월 3일', time: '12:00', nextMatchId: 'r16_1', winner: undefined },
+                        { id: 'r32_3', stage: 'RoundOf32' as const, matchNumber: 3, homeTeam: 'E조 1위', awayTeam: 'ABCDF조 3위', date: '6월 30일', time: '05:30', nextMatchId: 'r16_2', winner: undefined },
+                        { id: 'r32_4', stage: 'RoundOf32' as const, matchNumber: 4, homeTeam: 'I조 1위', awayTeam: 'CDFGH조 3위', date: '7월 1일', time: '06:00', nextMatchId: 'r16_2', winner: undefined },
+                        { id: 'r32_5', stage: 'RoundOf32' as const, matchNumber: 5, homeTeam: 'K조 2위', awayTeam: 'L조 2위', date: '7월 3일', time: '08:00', nextMatchId: 'r16_3', winner: undefined },
+                        { id: 'r32_6', stage: 'RoundOf32' as const, matchNumber: 6, homeTeam: 'H조 1위', awayTeam: 'J조 2위', date: '7월 3일', time: '04:00', nextMatchId: 'r16_3', winner: undefined },
+                        { id: 'r32_7', stage: 'RoundOf32' as const, matchNumber: 7, homeTeam: 'D조 1위', awayTeam: 'BEFIJ조 3위', date: '7월 2일', time: '09:00', nextMatchId: 'r16_4', winner: undefined },
+                        { id: 'r32_8', stage: 'RoundOf32' as const, matchNumber: 8, homeTeam: 'G조 1위', awayTeam: 'AEHIJ조 3위', date: '7월 2일', time: '05:00', nextMatchId: 'r16_4', winner: undefined },
+                        { id: 'r32_9', stage: 'RoundOf32' as const, matchNumber: 9, homeTeam: 'C조 1위', awayTeam: 'F조 2위', date: '6월 30일', time: '02:00', nextMatchId: 'r16_5', winner: undefined },
+                        { id: 'r32_10', stage: 'RoundOf32' as const, matchNumber: 10, homeTeam: 'E조 2위', awayTeam: 'I조 2위', date: '7월 1일', time: '02:00', nextMatchId: 'r16_5', winner: undefined },
+                        { id: 'r32_11', stage: 'RoundOf32' as const, matchNumber: 11, homeTeam: 'A조 1위', awayTeam: 'CEFHI조 3위', date: '7월 1일', time: '10:00', nextMatchId: 'r16_6', winner: undefined },
+                        { id: 'r32_12', stage: 'RoundOf32' as const, matchNumber: 12, homeTeam: 'L조 1위', awayTeam: 'EHIJK조 3위', date: '7월 2일', time: '01:00', nextMatchId: 'r16_6', winner: undefined },
+                        { id: 'r32_13', stage: 'RoundOf32' as const, matchNumber: 13, homeTeam: 'J조 1위', awayTeam: 'H조 2위', date: '7월 4일', time: '07:00', nextMatchId: 'r16_7', winner: undefined },
+                        { id: 'r32_14', stage: 'RoundOf32' as const, matchNumber: 14, homeTeam: 'D조 2위', awayTeam: 'G조 2위', date: '7월 4일', time: '03:00', nextMatchId: 'r16_7', winner: undefined },
+                        { id: 'r32_15', stage: 'RoundOf32' as const, matchNumber: 15, homeTeam: 'K조 1위', awayTeam: 'DEIJL조 3위', date: '7월 4일', time: '10:30', nextMatchId: 'r16_8', winner: undefined },
+                        { id: 'r32_16', stage: 'RoundOf32' as const, matchNumber: 16, homeTeam: 'F조 1위', awayTeam: 'C조 2위', date: '6월 30일', time: '10:00', nextMatchId: 'r16_8', winner: undefined }
                       ],
                       roundOf16: Array.from({ length: 8 }, (_, idx) => ({
                         id: `r16_${idx + 1}`,
@@ -1154,22 +1231,22 @@ export default function App() {
                     
                     // Map matches precisely based on their original placeholders: e.g. 'A조 1위' vs 'C조 3위'
                     const originalPlaceholders: Record<number, { home: string, away: string }> = {
-                      1: { home: 'A조 1위', away: 'C조 3위' },
-                      2: { home: 'B조 2위', away: 'F조 2위' },
-                      3: { home: 'C조 1위', away: 'F조 3위' },
-                      4: { home: 'D조 2위', away: 'G조 2위' },
-                      5: { home: 'E조 1위', away: 'I조 3위' },
-                      6: { home: 'F조 1위', away: 'K조 2위' },
-                      7: { home: 'G조 1위', away: 'J조 3위' },
-                      8: { home: 'H조 2위', away: 'L조 2위' },
-                      9: { home: 'I조 1위', away: 'A조 3위' },
-                      10: { home: 'J조 1위', away: 'D조 3위' },
-                      11: { home: 'K조 1위', away: 'E조 3위' },
-                      12: { home: 'L조 1위', away: 'H조 3위' },
-                      13: { home: 'B조 1위', away: 'E조 2위' },
-                      14: { home: 'D조 1위', away: 'I조 2위' },
-                      15: { home: 'H조 1위', away: 'J조 2위' },
-                      16: { home: 'A조 2위', away: 'C조 2위' }
+                      1: { home: 'A조 2위', away: 'B조 2위' },
+                      2: { home: 'B조 1위', away: 'EFGIJ조 3위' },
+                      3: { home: 'E조 1위', away: 'ABCDF조 3위' },
+                      4: { home: 'I조 1위', away: 'CDFGH조 3위' },
+                      5: { home: 'K조 2위', away: 'L조 2위' },
+                      6: { home: 'H조 1위', away: 'J조 2위' },
+                      7: { home: 'D조 1위', away: 'BEFIJ조 3위' },
+                      8: { home: 'G조 1위', away: 'AEHIJ조 3위' },
+                      9: { home: 'C조 1위', away: 'F조 2위' },
+                      10: { home: 'E조 2위', away: 'I조 2위' },
+                      11: { home: 'A조 1위', away: 'CEFHI조 3위' },
+                      12: { home: 'L조 1위', away: 'EHIJK조 3위' },
+                      13: { home: 'J조 1위', away: 'H조 2위' },
+                      14: { home: 'D조 2위', away: 'G조 2위' },
+                      15: { home: 'K조 1위', away: 'DEIJL조 3위' },
+                      16: { home: 'F조 1위', away: 'C조 2위' }
                     };
 
                     // 1. Get the 8 qualified 3rd place teams
@@ -1177,14 +1254,14 @@ export default function App() {
                     
                     // Wildcard Slot Preferred Group Letters
                     const wildcardPlaceholders = [
-                      'C조 3위', // Match 1
-                      'F조 3위', // Match 3
-                      'I조 3위', // Match 5
-                      'J조 3위', // Match 7
-                      'A조 3위', // Match 9
-                      'D조 3위', // Match 10
-                      'E조 3위', // Match 11
-                      'H조 3위'  // Match 12
+                      'EFGIJ조 3위',
+                      'ABCDF조 3위',
+                      'CDFGH조 3위',
+                      'BEFIJ조 3위',
+                      'AEHIJ조 3위',
+                      'EHIJK조 3위',
+                      'DEIJL조 3위',
+                      'CEFHI조 3위'
                     ];
 
                     // Map wildcard slots to qualified teams
