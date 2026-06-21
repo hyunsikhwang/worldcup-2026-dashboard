@@ -1,1 +1,173 @@
 @import "tailwindcss";
+
+@theme {
+  --font-sans: "Inter", ui-sans-serif, system-ui, sans-serif;
+  --font-mono: "JetBrains Mono", ui-monospace, SFMono-Regular, monospace;
+  --variant-dark: (&:where(.dark, .dark *));
+}
+
+/* Premium Dark Theme Overrides */
+html.dark {
+  background-color: #090d16 !important;
+  color: #f1f5f9 !important;
+}
+
+html.dark body {
+  background-color: #090d16 !important;
+  color: #f1f5f9 !important;
+}
+
+/* Toggleable sticky tab navigation */
+html.dark #navigation-tabs {
+  background-color: rgba(9, 13, 22, 0.95) !important;
+  border-color: #1e293b !important;
+}
+
+/* Clean background overrides for all standard cards classes */
+html.dark .bg-white {
+  background-color: #0f172a !important;
+}
+
+html.dark .bg-slate-50 {
+  background-color: #090d16 !important;
+}
+
+html.dark .bg-slate-100 {
+  background-color: #1e293b !important;
+}
+
+/* Custom interactive button states */
+html.dark .hover\:bg-slate-50:hover {
+  background-color: #1e293b !important;
+}
+
+html.dark .hover\:bg-slate-50\/70:hover {
+  background-color: rgba(30, 41, 59, 0.5) !important;
+}
+
+/* Borders variables */
+html.dark .border-slate-200 {
+  border-color: #1e293b !important;
+}
+
+html.dark .border-slate-100 {
+  border-color: #1e293b !important;
+}
+
+html.dark .divide-slate-100 > :not([hidden]) ~ :not([hidden]) {
+  border-color: #1e293b !important;
+}
+
+/* Text coloring overrides */
+html.dark .text-slate-950 {
+  color: #f8fafc !important;
+}
+
+html.dark .text-slate-900 {
+  color: #f8fafc !important;
+}
+
+html.dark .text-slate-800 {
+  color: #cbd5e1 !important;
+}
+
+html.dark .text-slate-700 {
+  color: #94a3b8 !important;
+}
+
+html.dark .text-slate-600 {
+  color: #64748b !important;
+}
+
+html.dark .text-slate-500 {
+  color: #475569 !important;
+}
+
+/* High contrast highlight overrides */
+html.dark .text-emerald-700 {
+  color: #34d399 !important;
+}
+
+html.dark .text-amber-700 {
+  color: #f59e0b !important;
+}
+
+html.dark .bg-amber-50\/40 {
+  background-color: rgba(245, 158, 11, 0.1) !important;
+}
+
+html.dark .bg-rose-50\/30 {
+  background-color: rgba(225, 29, 72, 0.1) !important;
+}
+
+html.dark .bg-rose-50\/55 {
+  background-color: rgba(225, 29, 72, 0.15) !important;
+  color: #fecdd3 !important;
+}
+
+html.dark .bg-emerald-50\/40 {
+  background-color: rgba(16, 185, 129, 0.1) !important;
+}
+
+html.dark .border-rose-100 {
+  border-color: rgba(225, 29, 72, 0.25) !important;
+}
+
+html.dark .text-rose-700 {
+  color: #f43f5e !important;
+}
+
+/* Bracket active highlights for bracket screens */
+html.dark .bg-amber-100 {
+  background-color: rgba(245, 158, 11, 0.15) !important;
+}
+
+html.dark .text-amber-950 {
+  color: #fcd34d !important;
+}
+
+html.dark .border-amber-400 {
+  border-color: rgba(245, 158, 11, 0.5) !important;
+}
+
+/* Text input controls & Dropdown Selects */
+html.dark input[type="text"] {
+  background-color: #0f172a !important;
+  color: #f8fafc !important;
+  border: 1px solid #1e293b !important;
+}
+
+html.dark input[type="text"]::placeholder {
+  color: #475569 !important;
+}
+
+html.dark input[type="number"] {
+  background-color: #0f172a !important;
+  color: #f8fafc !important;
+  border: 1px solid #1e293b !important;
+}
+
+html.dark select {
+  background-color: #0f172a !important;
+  color: #f8fafc !important;
+  border: 1px solid #1e293b !important;
+}
+
+html.dark option {
+  background-color: #0f172a !important;
+  color: #f8fafc !important;
+}
+
+/* Interactive focus borders for brackets maps */
+html.dark .hover\:border-emerald-400:hover {
+  border-color: #34d399 !important;
+}
+
+/* Custom background for scrollbars or containers */
+html.dark .bg-slate-50\/50 {
+  background-color: rgba(15, 23, 42, 0.5) !important;
+}
+
+html.dark .bg-slate-800\/40 {
+  background-color: rgba(15, 23, 42, 0.6) !important;
+}

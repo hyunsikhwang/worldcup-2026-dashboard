@@ -14,7 +14,11 @@ import {
   Clock, 
   Award,
   ChevronRight,
-  Info
+  Info,
+  List,
+  GitFork,
+  Sun,
+  Moon
 } from 'lucide-react';
 import { WorldCupData, GroupStanding, Match, BracketMatch, AIAnalysis } from './types';
 import { getCountryFlag, formatTeamNameWithFlag } from './utils/flags';
@@ -51,15 +55,48 @@ export function getThirdPlaceStandings(groups: GroupStanding[]): ThirdPlaceCandi
 }
 
 export default function App() {
+  const [theme, setTheme] = useState<'light' | 'dark'>(() => {
+    if (typeof window !== 'undefined') {
+      const saved = localStorage.getItem('theme');
+      if (saved === 'dark' || saved === 'light') {
+        return saved as 'light' | 'dark';
+      }
+    }
+    return 'light';
+  });
+
   const [data, setData] = useState<WorldCupData | null>(null);
   const [loading, setLoading] = useState<boolean>(true);
   const [refreshing, setRefreshing] = useState<boolean>(false);
   const [selectedGroupFilter, setSelectedGroupFilter] = useState<string>('ALL');
-  const [activeTab, setActiveTab] = useState<'standings' | 'matches' | 'bracket'>('standings');
+  const [activeTab, setActiveTab] = useState<'standings' | 'bracket'>('standings');
   const [searchTerm, setSearchTerm] = useState<string>('');
   const [customHomeScore, setCustomHomeScore] = useState<Record<string, number>>({});
   const [customAwayScore, setCustomAwayScore] = useState<Record<string, number>>({});
   const [apiNotification, setApiNotification] = useState<{message: string, type: 'info' | 'success' | 'amber'} | null>(null);
+
+  // Bracket UX states for responsive design
+  const [bracketViewMode, setBracketViewMode] = useState<'list' | 'tree'>('list');
+
+  useEffect(() => {
+    localStorage.setItem('theme', theme);
+    if (theme === 'dark') {
+      document.documentElement.classList.add('dark');
+    } else {
+      document.documentElement.classList.remove('dark');
+    }
+  }, [theme]);
+  const [selectedBracketRound, setSelectedBracketRound] = useState<'roundOf32' | 'roundOf16' | 'quarterFinals' | 'semiFinals' | 'final'>('roundOf32');
+
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      if (window.innerWidth >= 1024) {
+        setBracketViewMode('tree');
+      } else {
+        setBracketViewMode('list');
+      }
+    }
+  }, []);
 
   // Fetch initial data
   const fetchWorldCupData = async () => {
@@ -99,12 +136,7 @@ export default function App() {
         setData(result.data);
       }
 
-      if (result.success) {
-        setApiNotification({
-          message: result.message || '실시간 정보가 최신 상태로 갱신되었습니다.',
-          type: 'success'
-        });
-      } else {
+      if (!result.success) {
         setApiNotification({
           message: result.error || '실시간 갱신 중 오류가 발생했습니다.',
           type: 'amber'
@@ -195,91 +227,82 @@ export default function App() {
   });
 
   return (
-    <div className="min-h-screen bg-slate-50 text-slate-900 font-sans leading-relaxed">
+    <div className="min-h-screen bg-slate-50 dark:bg-slate-950 text-slate-900 dark:text-slate-100 font-sans leading-relaxed transition-colors duration-300">
       {/* Top Notice Banner */}
       {apiNotification && (
         <div className={`p-4 text-center text-sm font-semibold transition-all shadow-sm flex items-center justify-center gap-3 ${
-          apiNotification.type === 'success' ? 'bg-emerald-100 text-emerald-800' : 'bg-amber-100 text-amber-800'
+          apiNotification.type === 'success' 
+            ? 'bg-emerald-100 text-emerald-800 dark:bg-emerald-950/80 dark:text-emerald-200' 
+            : 'bg-amber-100 text-amber-800 dark:bg-amber-950/80 dark:text-amber-200'
         }`} id="live-notification">
-          <Sparkles className="w-5 h-5 animate-spin text-emerald-600" />
+          <Sparkles className="w-5 h-5 text-emerald-600 dark:text-emerald-400 shrink-0" />
           <span>{apiNotification.message}</span>
           <button 
             onClick={() => setApiNotification(null)}
-            className="ml-4 underline cursor-pointer text-xs uppercase tracking-wider hover:text-slate-950"
+            className="ml-4 px-2 py-1 text-xs font-bold rounded bg-black/5 dark:bg-white/10 hover:bg-black/10 dark:hover:bg-white/20 active:scale-95 transition cursor-pointer"
           >
-            선택해제
+            닫기
           </button>
         </div>
       )}
 
       {/* Modern High-Contrast Elegant Header */}
-      <header className="bg-slate-900 text-white relative overflow-hidden border-b border-slate-800">
-        <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top_right,_var(--tw-gradient-stops))] from-emerald-950/40 via-slate-950 to-slate-950 -z-1"></div>
+      <header className="bg-white dark:bg-slate-900 text-slate-900 dark:text-white relative overflow-hidden border-b border-slate-200 dark:border-slate-800 transition-colors duration-300">
+        <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top_right,_var(--tw-gradient-stops))] from-emerald-500/10 dark:from-emerald-950/40 via-white dark:via-slate-950 to-white dark:to-slate-950 -z-1 transition-colors duration-300"></div>
         <div className="max-w-7xl mx-auto px-4 py-8 md:py-12">
           <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">
             <div>
-              <div className="inline-flex items-center gap-2 bg-emerald-500/15 border border-emerald-500/30 text-emerald-400 px-3 py-1 rounded-full text-xs font-semibold uppercase tracking-wider mb-3">
+              <div className="inline-flex items-center gap-2 bg-emerald-500/10 dark:bg-emerald-500/15 border border-emerald-500/20 dark:border-emerald-500/30 text-emerald-600 dark:text-emerald-400 px-3 py-1 rounded-full text-xs font-semibold uppercase tracking-wider mb-3 select-none">
                 <span className="flex h-2.5 w-2.5 relative">
                   <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
                   <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-emerald-500"></span>
                 </span>
                 2026 FIFA World Cup Live Grounding Mode
               </div>
-              <h1 className="text-3xl md:text-5xl font-black tracking-tight" id="main-title">
-                2026 북중미 월드컵 <span className="text-transparent bg-clip-text bg-gradient-to-r from-emerald-400 via-teal-300 to-emerald-500">라이브 대시보드</span>
+              <h1 className="text-3xl md:text-5xl font-black tracking-tight text-slate-950 dark:text-white" id="main-title">
+                2026 북중미 월드컵 <span className="text-transparent bg-clip-text bg-gradient-to-r from-emerald-500 via-teal-500 to-emerald-600 dark:from-emerald-400 dark:via-teal-300 dark:to-emerald-500">실시간 순위 & 대진표</span>
               </h1>
-
               
-              <div className="flex flex-wrap items-center gap-4 mt-6 text-sm text-slate-400" id="metadata-bar">
-                <div className="flex items-center gap-1.5 bg-slate-800/80 px-3 py-1.5 rounded-lg border border-slate-700/65">
-                  <Clock className="w-4 h-4 text-emerald-400" />
-                  <span>최종 갱신: <strong className="text-slate-200">{data.lastUpdated}</strong></span>
+              <div className="flex flex-wrap items-center gap-4 mt-6 text-sm text-slate-500 dark:text-slate-400" id="metadata-bar">
+                <div className="flex items-center gap-1.5 bg-slate-100 dark:bg-slate-800/80 px-3 py-1.5 rounded-lg border border-slate-200 dark:border-slate-700/65">
+                  <Clock className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />
+                  <span>최종 갱신: <strong className="text-slate-700 dark:text-slate-200">{data.lastUpdated}</strong></span>
                 </div>
-                <div className="flex items-center gap-1.5 bg-slate-800/80 px-3 py-1.5 rounded-lg border border-slate-700/65">
-                  <Activity className="w-4 h-4 text-emerald-400 animate-pulse" />
+                <div className="flex items-center gap-1.5 bg-slate-100 dark:bg-slate-800/80 px-3 py-1.5 rounded-lg border border-slate-200 dark:border-slate-700/65">
+                  <Activity className="w-4 h-4 text-emerald-600 dark:text-emerald-400 animate-pulse" />
                   <span>위치 기반 검색 지원</span>
                 </div>
               </div>
             </div>
 
             {/* Quick Actions Panel */}
-            <div className="flex flex-col sm:flex-row gap-3" id="quick-actions-card">
+            <div className="flex flex-col sm:flex-row gap-3 items-stretch sm:items-center" id="quick-actions-card">
               <button
                 onClick={handleRefresh}
                 disabled={refreshing}
-                className="flex items-center justify-center gap-2 px-6 py-3.5 bg-emerald-600 hover:bg-emerald-500 disabled:opacity-50 text-white font-bold rounded-xl shadow-lg shadow-emerald-950/20 active:translate-y-0.5 transition cursor-pointer text-sm"
+                className="flex items-center justify-center gap-2 px-6 py-3.5 bg-emerald-600 hover:bg-emerald-500 disabled:opacity-50 text-white font-bold rounded-xl shadow-lg shadow-emerald-950/10 active:translate-y-0.5 transition cursor-pointer text-sm"
                 id="refresh-grounding-btn"
               >
                 <RefreshCw className={`w-5 h-5 ${refreshing ? 'animate-spin' : ''}`} />
                 <span>{refreshing ? '실시간 정보 확인 중...' : '실시간 정보 및 대진 갱신'}</span>
               </button>
-            </div>
-          </div>
 
-          {/* Quick Stats Banner */}
-          <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mt-8 pt-6 border-t border-slate-800/80">
-            <div className="bg-slate-800/40 p-3 rounded-lg border border-slate-800">
-              <div className="text-xs text-slate-400">총 참가 국가</div>
-              <div className="text-lg font-black text-slate-200">48개국 본선 체제</div>
-            </div>
-            <div className="bg-slate-800/40 p-3 rounded-lg border border-slate-800">
-              <div className="text-xs text-slate-400">조별리그 구성</div>
-              <div className="text-lg font-black text-slate-200">A ~ L조 (총 12개 조)</div>
-            </div>
-            <div className="bg-slate-800/40 p-3 rounded-lg border border-slate-800">
-              <div className="text-xs text-slate-400">토너먼트 시작</div>
-              <div className="text-lg font-black text-slate-200">32강 토너먼트 구성</div>
-            </div>
-            <div className="bg-slate-800/40 p-3 rounded-lg border border-slate-800">
-              <div className="text-xs text-slate-400">개최 공동 개최국</div>
-              <div className="text-lg font-black text-slate-200">미국, 캐나다, 멕시코</div>
+              <button
+                onClick={() => setTheme(theme === 'light' ? 'dark' : 'light')}
+                className="flex items-center justify-center gap-2 px-5 py-3.5 bg-slate-100 hover:bg-slate-200 dark:bg-slate-800/90 dark:hover:bg-slate-700/95 text-slate-800 dark:text-slate-200 hover:text-slate-955 dark:hover:text-white font-bold rounded-xl border border-slate-200 dark:border-slate-700/80 shadow-sm active:translate-y-0.5 transition cursor-pointer text-sm"
+                title={theme === 'light' ? '다크 모드로 전환' : '라이트 모드로 전환'}
+                id="theme-toggle-btn"
+              >
+                {theme === 'light' ? <Moon className="w-5 h-5 text-amber-500" /> : <Sun className="w-5 h-5 text-amber-400" />}
+                <span>{theme === 'light' ? '다크 모드' : '라이트 모드'}</span>
+              </button>
             </div>
           </div>
         </div>
       </header>
 
       {/* Tab Navigation */}
-      <div className="sticky top-0 bg-white/95 backdrop-blur z-20 border-b border-slate-200/80 shadow-xs" id="navigation-tabs">
+      <div className="sticky top-0 bg-white/95 dark:bg-slate-900/95 backdrop-blur z-20 border-b border-slate-200/80 dark:border-slate-800 shadow-xs transition-colors duration-300" id="navigation-tabs">
         <div className="max-w-7xl mx-auto px-4">
           <div className="flex overflow-x-auto scrollbar-none items-center justify-between gap-8 h-14">
             <div className="flex gap-4">
@@ -287,8 +310,8 @@ export default function App() {
                 onClick={() => setActiveTab('standings')}
                 className={`h-14 px-3 flex items-center gap-2 font-bold text-sm border-b-2 transition relative ${
                   activeTab === 'standings' 
-                    ? 'border-emerald-600 text-emerald-700' 
-                    : 'border-transparent text-slate-600 hover:text-slate-900'
+                    ? 'border-emerald-600 text-emerald-700 dark:text-emerald-400' 
+                    : 'border-transparent text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200'
                 }`}
                 id="tab-btn-standings"
               >
@@ -297,30 +320,11 @@ export default function App() {
               </button>
 
               <button
-                onClick={() => setActiveTab('matches')}
-                className={`h-14 px-3 flex items-center gap-2 font-bold text-sm border-b-2 transition relative ${
-                  activeTab === 'matches' 
-                    ? 'border-emerald-600 text-emerald-700' 
-                    : 'border-transparent text-slate-600 hover:text-slate-900'
-                }`}
-                id="tab-btn-matches"
-              >
-                <Activity className="w-4 h-4" />
-                <span>라이브 일정 및 결과</span>
-                {data.matches.some(m => m.status === 'Live') && (
-                  <span className="absolute top-2.5 right-0.5 flex h-2 w-2">
-                    <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-red-400 opacity-75"></span>
-                    <span className="relative inline-flex rounded-full h-2 w-2 bg-red-500"></span>
-                  </span>
-                )}
-              </button>
-
-              <button
                 onClick={() => setActiveTab('bracket')}
                 className={`h-14 px-3 flex items-center gap-2 font-bold text-sm border-b-2 transition ${
                   activeTab === 'bracket' 
-                    ? 'border-emerald-600 text-emerald-700' 
-                    : 'border-transparent text-slate-600 hover:text-slate-900'
+                    ? 'border-emerald-600 text-emerald-700 dark:text-emerald-400' 
+                    : 'border-transparent text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200'
                 }`}
                 id="tab-btn-bracket"
               >
@@ -337,7 +341,7 @@ export default function App() {
                   placeholder="국가명으로 순위 검색..."
                   value={searchTerm}
                   onChange={(e) => setSearchTerm(e.target.value)}
-                  className="bg-slate-100 border-none outline-none pl-9 pr-4 py-1.5 rounded-lg text-xs w-48 focus:w-60 focus:bg-slate-200/80 transition-all focus:ring-1 focus:ring-emerald-500"
+                  className="bg-slate-100 dark:bg-slate-800 text-slate-900 dark:text-slate-100 border-none outline-none pl-9 pr-4 py-1.5 rounded-lg text-xs w-48 focus:w-60 focus:bg-slate-200/80 dark:focus:bg-slate-700 transition-all focus:ring-1 focus:ring-emerald-500"
                 />
               </div>
             </div>
@@ -352,9 +356,9 @@ export default function App() {
         {activeTab === 'standings' && (
           <div className="space-y-8 animate-fade-in" id="content-standings">
             {/* Filter and Overview Controls */}
-            <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4 bg-white p-4 rounded-xl border border-slate-200 shadow-xs">
+            <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4 bg-white dark:bg-slate-900 p-4 rounded-xl border border-slate-200 dark:border-slate-800 shadow-xs">
               <div className="flex flex-wrap items-center gap-1.5" id="group-filters">
-                <span className="text-xs font-bold text-slate-500 mr-2 uppercase tracking-wide">조별 보기</span>
+                <span className="text-xs font-bold text-slate-500 dark:text-slate-400 mr-2 uppercase tracking-wide">조별 보기</span>
                 {groupsList.map(grp => (
                   <button
                     key={grp}
@@ -362,7 +366,7 @@ export default function App() {
                     className={`px-3 py-1 rounded-md text-xs font-bold transition cursor-pointer ${
                       selectedGroupFilter === grp
                         ? 'bg-emerald-600 text-white shadow-sm'
-                        : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
+                        : 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-700'
                     }`}
                   >
                     {grp === 'ALL' ? '전체 보기' : `${grp}조`}
@@ -370,13 +374,13 @@ export default function App() {
                 ))}
               </div>
 
-              <div className="flex items-center gap-3 text-xs text-slate-500">
+              <div className="flex items-center gap-3 text-xs text-slate-500 dark:text-slate-400">
                 <div className="flex items-center gap-1">
-                  <span className="w-2.5 h-2.5 bg-sky-100 border border-sky-300 block rounded-xs"></span>
+                  <span className="w-2.5 h-2.5 bg-sky-100 dark:bg-sky-950 border border-sky-300 dark:border-sky-800 block rounded-xs"></span>
                   <span>1~2위 본선 진출</span>
                 </div>
                 <div className="flex items-center gap-1">
-                  <span className="w-2.5 h-2.5 bg-amber-50 border border-amber-200 block rounded-xs"></span>
+                  <span className="w-2.5 h-2.5 bg-amber-50 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-900 block rounded-xs"></span>
                   <span>3위 와일드카드 후보군</span>
                 </div>
               </div>
@@ -391,17 +395,17 @@ export default function App() {
                 return (
                   <div 
                     key={group.groupLetter} 
-                    className={`bg-white rounded-2xl border transition shadow-sm hover:shadow-md overflow-visible relative z-10 hover:z-20 ${
+                    className={`bg-white dark:bg-slate-900 rounded-2xl border transition shadow-sm hover:shadow-md overflow-visible relative z-10 hover:z-20 ${
                       hasKorea 
-                        ? 'ring-2 ring-rose-500/80 border-rose-200' 
-                        : 'border-slate-200'
+                        ? 'ring-2 ring-rose-500/80 border-rose-200 dark:border-rose-900/60 dark:ring-rose-500/50' 
+                        : 'border-slate-200 dark:border-slate-800'
                     }`}
                     id={`group-card-${group.groupLetter}`}
                   >
                     <div className={`px-4 py-3.5 flex items-center justify-between font-bold rounded-t-2xl ${
                       hasKorea 
-                        ? 'bg-rose-50/50 text-rose-900 border-b border-rose-100' 
-                        : 'bg-slate-100 text-slate-800'
+                        ? 'bg-rose-50/55 border-b border-rose-100 dark:border-rose-900/40 text-rose-900 dark:text-rose-200 dark:bg-rose-950/20' 
+                        : 'bg-slate-100 text-slate-800 dark:bg-slate-800 dark:text-slate-105 dark:text-slate-100'
                     }`}>
                       <div className="flex items-center gap-2">
                         <span className="text-lg">Group {group.groupLetter}</span>
@@ -417,7 +421,7 @@ export default function App() {
                     <div className="overflow-visible">
                       <table className="w-full text-left text-xs min-w-[320px]">
                         <thead>
-                          <tr className="bg-slate-50 text-slate-400 font-semibold border-b border-slate-100">
+                          <tr className="bg-slate-50 dark:bg-slate-850 text-slate-400 dark:text-slate-350 font-semibold border-b border-slate-100 dark:border-slate-800">
                             <th className="py-2.5 px-3 text-center w-8">순위</th>
                             <th className="py-2.5 px-1">국가명</th>
                             <th className="py-2.5 px-1 text-center w-8">경기</th>
@@ -425,7 +429,7 @@ export default function App() {
                             <th className="py-2.5 px-1 text-center w-8">무</th>
                             <th className="py-2.5 px-1 text-center w-8">패</th>
                             <th className="py-2.5 px-1 text-center w-8">득실</th>
-                            <th className="py-2.5 px-2.5 text-center font-bold text-slate-600 w-14 whitespace-nowrap">승점</th>
+                            <th className="py-2.5 px-2.5 text-center font-bold text-slate-600 dark:text-slate-350 w-14 whitespace-nowrap">승점</th>
                           </tr>
                         </thead>
                         <tbody>
@@ -437,8 +441,8 @@ export default function App() {
                             return (
                               <tr 
                                 key={team.name}
-                                className={`border-b border-slate-100/60 hover:bg-slate-50/70 transition-colors ${
-                                  isKorea ? 'bg-rose-50/30' : ''
+                                className={`border-b border-slate-100/60 dark:border-slate-800/40 hover:bg-slate-50/70 dark:hover:bg-slate-800/20 transition-colors ${
+                                  isKorea ? 'bg-rose-50/30 dark:bg-rose-955/15' : ''
                                 }`}
                               >
                                 <td className="py-3 px-3 text-center">
@@ -446,18 +450,18 @@ export default function App() {
                                     isKorea 
                                       ? 'bg-rose-600 text-white'
                                       : isAdvancing 
-                                        ? 'bg-emerald-100 text-emerald-800' 
+                                        ? 'bg-emerald-100 text-emerald-800 dark:bg-emerald-950 dark:text-emerald-300' 
                                         : isThirdPlacePotential 
-                                          ? 'bg-amber-100 text-amber-800' 
-                                          : 'bg-slate-100 text-slate-500'
+                                          ? 'bg-amber-100 text-amber-800 dark:bg-amber-955/40 dark:text-amber-300' 
+                                          : 'bg-slate-100 text-slate-500 dark:bg-slate-800 dark:text-slate-400'
                                   }`}>
                                     {team.rank}
                                   </span>
                                 </td>
-                                <td className="py-3 px-1 font-semibold text-slate-800 relative overflow-visible group/tooltip cursor-help">
+                                <td className="py-3 px-1 font-semibold text-slate-800 dark:text-slate-200 relative overflow-visible group/tooltip cursor-help">
                                   <span className="flex items-center gap-1.5">
                                     <span className="text-base">{getCountryFlag(team.name)}</span>
-                                    <span className={`truncate max-w-[95px] ${isKorea ? 'text-rose-700 font-extrabold' : ''}`} title={team.name}>
+                                    <span className={`truncate max-w-[95px] ${isKorea ? 'text-rose-700 dark:text-rose-400 font-extrabold' : ''}`} title={team.name}>
                                       {team.name}
                                     </span>
                                   </span>
@@ -545,10 +549,10 @@ export default function App() {
                                     </div>
                                   </div>
                                 </td>
-                                <td className="py-3 px-1 text-center text-slate-500">{team.played}</td>
-                                <td className="py-3 px-1 text-center text-slate-600">{team.won}</td>
-                                <td className="py-3 px-1 text-center text-slate-600">{team.drawn}</td>
-                                <td className="py-3 px-1 text-center text-slate-600">{team.lost}</td>
+                                <td className="py-3 px-1 text-center text-slate-500 dark:text-slate-400">{team.played}</td>
+                                <td className="py-3 px-1 text-center text-slate-600 dark:text-slate-350">{team.won}</td>
+                                <td className="py-3 px-1 text-center text-slate-600 dark:text-slate-350">{team.drawn}</td>
+                                <td className="py-3 px-1 text-center text-slate-600 dark:text-slate-350">{team.lost}</td>
                                 <td className="py-3 px-1 text-center font-mono text-xs text-slate-500 font-medium whitespace-nowrap">
                                    {team.gd > 0 ? `+${team.gd}` : team.gd}
                                  </td>
@@ -747,7 +751,7 @@ export default function App() {
         )}
 
         {/* MATCHES SCHEDULES & SIMULATION TAB */}
-        {activeTab === 'matches' && (
+        {false && (
           <div className="space-y-8 animate-fade-in" id="content-matches">
             {/* Simulation controls card */}
             <div className="bg-gradient-to-r from-emerald-950 to-slate-900 text-white p-6 rounded-2xl border border-emerald-800 shadow-md">
@@ -1009,7 +1013,7 @@ export default function App() {
               {/* Side Simulation Action Form */}
               <div className="space-y-6">
                 <div className="bg-white rounded-2xl border border-slate-200 p-5 shadow-xs sticky top-20">
-                  <h3 className="text-base font-black text-slate-950 mb-3 flex items-center gap-1.5 border-b border-slate-100 pb-2">
+                  <h3 className="text-base font-black text-slate-950 dark:text-slate-100 mb-3 flex items-center gap-1.5 border-b border-slate-100 dark:border-slate-800 pb-2">
                     <Trophy className="w-5 h-5 text-emerald-600" />
                     <span>새로운 경기 수동 입력</span>
                   </h3>
@@ -1350,398 +1354,738 @@ export default function App() {
               </div>
             </div>
 
-            {/* Custom Symmetrical Bidirectional Layout */}
-            <div className="bg-slate-50/50 rounded-2xl border border-slate-200/60 p-3" id="tree-container">
-              {/* Header Titles Row */}
-              <div className="grid grid-cols-9 gap-1 text-[9px] text-slate-500 font-bold text-center uppercase tracking-wider mb-2 border-b border-slate-200/50 pb-1.5">
-                <div>32강전 (A)</div>
-                <div>16강전 (A)</div>
-                <div>8강전 (A)</div>
-                <div>준결승 (A)</div>
-                <div className="text-amber-600 font-black">월드컵 결승전</div>
-                <div>준결승 (B)</div>
-                <div>8강전 (B)</div>
-                <div>16강전 (B)</div>
-                <div>32강전 (B)</div>
+            {/* 뷰 모드 탭 컨트롤 (스마트 목록 및 트리 맵) */}
+            <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 bg-white p-3.5 rounded-2xl border border-slate-200">
+              <div className="flex flex-wrap items-center gap-3">
+                <span className="text-xs font-black text-slate-500 uppercase tracking-wider">보기 모드 선택:</span>
+                <div className="inline-flex rounded-xl bg-slate-100 p-1 border border-slate-200" id="bracket-view-tabs">
+                  <button
+                    onClick={() => setBracketViewMode('list')}
+                    className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer ${
+                      bracketViewMode === 'list'
+                        ? 'bg-white text-emerald-800 shadow-xs ring-1 ring-black/5'
+                        : 'text-slate-600 hover:text-slate-900'
+                    }`}
+                  >
+                    <List className="w-3.5 h-3.5" />
+                    <span>스마트 목록 뷰</span>
+                    <span className="bg-emerald-100 text-emerald-800 text-[8px] px-1 rounded-sm py-0.2 shrink-0 md:inline hidden ml-1">추천</span>
+                  </button>
+                  <button
+                    onClick={() => setBracketViewMode('tree')}
+                    className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer ${
+                      bracketViewMode === 'tree'
+                        ? 'bg-white text-emerald-800 shadow-xs ring-1 ring-black/5'
+                        : 'text-slate-600 hover:text-slate-900'
+                    }`}
+                  >
+                    <GitFork className="w-3.5 h-3.5" />
+                    <span>전체 트리 맵</span>
+                  </button>
+                </div>
               </div>
 
-              {/* The Bracket Symmetrical Grid */}
-              <div className="grid grid-cols-9 gap-1 h-[500px] items-stretch" id="symmetrical-bracket">
-                
-                {/* 1. Left Round of 32 (Matches 1 to 8) */}
-                <div className="flex flex-col justify-around h-full gap-0.5">
-                  {data.bracket.roundOf32.slice(0, 8).map(match => (
-                    <div key={match.id} className="bg-white border border-slate-200 rounded-lg p-1 shadow-3xs text-[10px] space-y-0.5 hover:border-emerald-400 transition relative">
-                      <span className="text-[7px] text-slate-400 font-mono absolute right-1 top-[1px]">#{match.matchNumber}</span>
-                      {/* Home */}
-                      <div 
-                        onClick={() => match.homeTeam && handleBracketMatchWinner('roundOf32', match.id, match.homeTeam)}
-                        className={`flex items-center justify-between px-1.5 py-0.5 rounded cursor-pointer transition select-none ${
-                          match.winner === match.homeTeam 
-                            ? 'bg-emerald-50 text-emerald-800 font-bold border border-emerald-100/50' 
-                            : 'hover:bg-slate-50 text-slate-600'
-                        }`}
-                      >
-                        <span className="flex items-center gap-1 min-w-0 flex-1">
-                          <span className="text-xs shrink-0">{getCountryFlag(match.homeTeam || '')}</span>
-                          <span className="truncate font-medium">{match.homeTeam || '미정'}</span>
-                        </span>
-                        {match.winner === match.homeTeam && <Check className="w-2.5 h-2.5 text-emerald-600 shrink-0" />}
-                      </div>
-                      {/* Away */}
-                      <div 
-                        onClick={() => match.awayTeam && handleBracketMatchWinner('roundOf32', match.id, match.awayTeam)}
-                        className={`flex items-center justify-between px-1.5 py-0.5 rounded cursor-pointer transition select-none ${
-                          match.winner === match.awayTeam 
-                            ? 'bg-emerald-50 text-emerald-800 font-bold border border-emerald-100/50' 
-                            : 'hover:bg-slate-50 text-slate-600'
-                        }`}
-                      >
-                        <span className="flex items-center gap-1 min-w-0 flex-1">
-                          <span className="text-xs shrink-0">{getCountryFlag(match.awayTeam || '')}</span>
-                          <span className="truncate font-medium">{match.awayTeam || '미정'}</span>
-                        </span>
-                        {match.winner === match.awayTeam && <Check className="w-2.5 h-2.5 text-emerald-600 shrink-0" />}
-                      </div>
-                    </div>
+              {bracketViewMode === 'list' ? (
+                <div className="text-slate-500 text-[11px] font-medium">
+                  💡 모바일/태블릿 맞춤 뷰: 경기 카드에서 <strong className="text-emerald-700">진출국을 선택</strong>하면 다음 라운드 대진으로 자동 전송됩니다.
+                </div>
+              ) : (
+                <div className="text-slate-500 text-[11px] font-medium flex items-center gap-1.5">
+                  <span className="animate-pulse">↔️</span>
+                  <span><strong>가로 스크롤 및 스와이프</strong>를 활용해 양방향 대칭 트리 맵의 승리 흐름을 한눈에 보세요.</span>
+                </div>
+              )}
+            </div>
+
+            {/* 1. 스마트 목록 뷰 */}
+            {bracketViewMode === 'list' && (
+              <div className="space-y-4 animate-fade-in" id="bracket-list-view">
+                {/* 라운드 선택 슬라이더 */}
+                <div className="flex bg-slate-100 rounded-xl p-1 border border-slate-200/50 justify-between items-center gap-1 shadow-3xs overflow-x-auto scrollbar-none">
+                  {[
+                    { key: 'roundOf32', label: '32강 대진' },
+                    { key: 'roundOf16', label: '16강 대진' },
+                    { key: 'quarterFinals', label: '8강 대진' },
+                    { key: 'semiFinals', label: '준결승(4강)' },
+                    { key: 'final', label: '월드컵 결승' }
+                  ].map((round) => (
+                    <button
+                      key={round.key}
+                      onClick={() => setSelectedBracketRound(round.key as any)}
+                      className={`flex-1 min-w-[70px] text-[11px] sm:text-xs font-black text-center py-2.5 px-1.5 whitespace-nowrap rounded-lg transition-all cursor-pointer ${
+                        selectedBracketRound === round.key
+                          ? 'bg-slate-900 text-white shadow-xs'
+                          : 'text-slate-600 hover:bg-slate-200 hover:text-slate-900'
+                      }`}
+                    >
+                      {round.label}
+                    </button>
                   ))}
                 </div>
 
-                {/* 2. Left Round of 16 (Matches 1 to 4) */}
-                <div className="flex flex-col justify-around h-full gap-0.5">
-                  {data.bracket.roundOf16.slice(0, 4).map(match => (
-                    <div key={match.id} className="bg-white border border-slate-200 rounded-lg p-1.5 shadow-3xs text-[10px] space-y-0.5 hover:border-emerald-400 transition relative">
-                      <span className="text-[7px] text-slate-400 font-mono absolute right-1 top-[1px]">#{match.matchNumber}</span>
-                      {/* Home */}
-                      <div 
-                        onClick={() => match.homeTeam && handleBracketMatchWinner('roundOf16', match.id, match.homeTeam)}
-                        className={`flex items-center justify-between px-1.5 py-0.5 rounded cursor-pointer transition select-none ${
-                          match.winner === match.homeTeam 
-                            ? 'bg-emerald-50 text-emerald-800 font-bold border border-emerald-100/50' 
-                            : 'hover:bg-slate-50 text-slate-600'
-                        }`}
-                      >
-                        <span className="flex items-center gap-1 min-w-0 flex-1">
-                          <span className="text-xs shrink-0">{getCountryFlag(match.homeTeam || '')}</span>
-                          <span className="truncate font-medium">{match.homeTeam || '32강 승자'}</span>
-                        </span>
-                        {match.winner === match.homeTeam && <Check className="w-2.5 h-2.5 text-emerald-600 shrink-0" />}
+                {/* 선택된 라운드의 매치 카드 목록 */}
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3">
+                  {selectedBracketRound === 'roundOf32' && data.bracket.roundOf32.map(match => (
+                    <div key={match.id} className="bg-white border border-slate-200 rounded-xl p-3 shadow-3xs space-y-2 hover:border-emerald-400 transition relative">
+                      <div className="flex justify-between items-center border-b border-slate-100 pb-1.5">
+                        <span className="text-[10px] text-slate-500 font-mono font-bold">매치 #{match.matchNumber}</span>
+                        <span className="text-[10px] text-emerald-600 font-bold bg-emerald-50 px-1.5 py-0.5 rounded-md">{match.date} {match.time}</span>
                       </div>
-                      {/* Away */}
-                      <div 
-                        onClick={() => match.awayTeam && handleBracketMatchWinner('roundOf16', match.id, match.awayTeam)}
-                        className={`flex items-center justify-between px-1.5 py-0.5 rounded cursor-pointer transition select-none ${
-                          match.winner === match.awayTeam 
-                            ? 'bg-emerald-50 text-emerald-800 font-bold border border-emerald-100/50' 
-                            : 'hover:bg-slate-50 text-slate-600'
-                        }`}
-                      >
-                        <span className="flex items-center gap-1 min-w-0 flex-1">
-                          <span className="text-xs shrink-0">{getCountryFlag(match.awayTeam || '')}</span>
-                          <span className="truncate font-medium">{match.awayTeam || '32강 승자'}</span>
-                        </span>
-                        {match.winner === match.awayTeam && <Check className="w-2.5 h-2.5 text-emerald-600 shrink-0" />}
+                      
+                      <div className="space-y-1.5">
+                        {/* Home */}
+                        <div 
+                          onClick={() => match.homeTeam && handleBracketMatchWinner('roundOf32', match.id, match.homeTeam)}
+                          className={`flex items-center justify-between p-2 rounded-lg cursor-pointer transition border border-transparent select-none min-h-[44px] ${
+                            match.winner === match.homeTeam 
+                              ? 'bg-emerald-50 text-emerald-800 font-extrabold border-emerald-200' 
+                              : 'hover:bg-slate-50 text-slate-600'
+                          }`}
+                        >
+                          <span className="flex items-center gap-2 min-w-0 flex-1">
+                            <span className="text-sm shrink-0">{getCountryFlag(match.homeTeam || '')}</span>
+                            <span className="truncate text-xs font-medium">{match.homeTeam || '미정'}</span>
+                          </span>
+                          {match.winner === match.homeTeam ? (
+                            <Check className="w-4 h-4 text-emerald-600 shrink-0" />
+                          ) : (
+                            <span className="text-[9px] text-slate-400 font-semibold shrink-0">선택</span>
+                          )}
+                        </div>
+
+                        {/* Away */}
+                        <div 
+                          onClick={() => match.awayTeam && handleBracketMatchWinner('roundOf32', match.id, match.awayTeam)}
+                          className={`flex items-center justify-between p-2 rounded-lg cursor-pointer transition border border-transparent select-none min-h-[44px] ${
+                            match.winner === match.awayTeam 
+                              ? 'bg-emerald-50 text-emerald-800 font-extrabold border-emerald-200' 
+                              : 'hover:bg-slate-50 text-slate-600'
+                          }`}
+                        >
+                          <span className="flex items-center gap-2 min-w-0 flex-1">
+                            <span className="text-sm shrink-0">{getCountryFlag(match.awayTeam || '')}</span>
+                            <span className="truncate text-xs font-medium">{match.awayTeam || '미정'}</span>
+                          </span>
+                          {match.winner === match.awayTeam ? (
+                            <Check className="w-4 h-4 text-emerald-600 shrink-0" />
+                          ) : (
+                            <span className="text-[9px] text-slate-400 font-semibold shrink-0">선택</span>
+                          )}
+                        </div>
                       </div>
                     </div>
                   ))}
-                </div>
 
-                {/* 3. Left Quarter Finals (Matches 1 to 2) */}
-                <div className="flex flex-col justify-around h-full gap-0.5">
-                  {data.bracket.quarterFinals.slice(0, 2).map(match => (
-                    <div key={match.id} className="bg-white border border-slate-200 rounded-lg p-1.5 shadow-3xs text-[10px] space-y-0.5 hover:border-emerald-400 transition relative">
-                      <span className="text-[7px] text-slate-400 font-mono absolute right-1 top-[1px]">#{match.matchNumber}</span>
-                      {/* Home */}
-                      <div 
-                        onClick={() => match.homeTeam && handleBracketMatchWinner('quarterFinals', match.id, match.homeTeam)}
-                        className={`flex items-center justify-between px-1.5 py-0.5 rounded cursor-pointer transition select-none ${
-                          match.winner === match.homeTeam 
-                            ? 'bg-emerald-50 text-emerald-800 font-bold border border-emerald-100/50' 
-                            : 'hover:bg-slate-50 text-slate-600'
-                        }`}
-                      >
-                        <span className="flex items-center gap-1 min-w-0 flex-1">
-                          <span className="text-xs shrink-0">{getCountryFlag(match.homeTeam || '')}</span>
-                          <span className="truncate font-medium">{match.homeTeam || '16강 승자'}</span>
-                        </span>
-                        {match.winner === match.homeTeam && <Check className="w-2.5 h-2.5 text-emerald-600 shrink-0" />}
+                  {selectedBracketRound === 'roundOf16' && data.bracket.roundOf16.map(match => (
+                    <div key={match.id} className="bg-white border border-slate-200 rounded-xl p-3 shadow-3xs space-y-2 hover:border-emerald-400 transition relative">
+                      <div className="flex justify-between items-center border-b border-slate-100 pb-1.5">
+                        <span className="text-[10px] text-slate-500 font-mono font-bold">매치 #{match.matchNumber}</span>
+                        <span className="text-[10px] text-emerald-600 font-bold bg-emerald-50 px-1.5 py-0.5 rounded-md">{match.date} {match.time}</span>
                       </div>
-                      {/* Away */}
-                      <div 
-                        onClick={() => match.awayTeam && handleBracketMatchWinner('quarterFinals', match.id, match.awayTeam)}
-                        className={`flex items-center justify-between px-1.5 py-0.5 rounded cursor-pointer transition select-none ${
-                          match.winner === match.awayTeam 
-                            ? 'bg-emerald-50 text-emerald-800 font-bold border border-emerald-100/50' 
-                            : 'hover:bg-slate-50 text-slate-600'
-                        }`}
-                      >
-                        <span className="flex items-center gap-1 min-w-0 flex-1">
-                          <span className="text-xs shrink-0">{getCountryFlag(match.awayTeam || '')}</span>
-                          <span className="truncate font-medium">{match.awayTeam || '16강 승자'}</span>
-                        </span>
-                        {match.winner === match.awayTeam && <Check className="w-2.5 h-2.5 text-emerald-600 shrink-0" />}
+                      
+                      <div className="space-y-1.5">
+                        {/* Home */}
+                        <div 
+                          onClick={() => match.homeTeam && handleBracketMatchWinner('roundOf16', match.id, match.homeTeam)}
+                          className={`flex items-center justify-between p-2 rounded-lg cursor-pointer transition border border-transparent select-none min-h-[44px] ${
+                            match.winner === match.homeTeam 
+                              ? 'bg-emerald-50 text-emerald-800 font-extrabold border-emerald-200' 
+                              : 'hover:bg-slate-50 text-slate-600'
+                          }`}
+                        >
+                          <span className="flex items-center gap-2 min-w-0 flex-1">
+                            <span className="text-sm shrink-0">{getCountryFlag(match.homeTeam || '')}</span>
+                            <span className="truncate text-xs font-medium">{match.homeTeam || '32강 승자'}</span>
+                          </span>
+                          {match.winner === match.homeTeam ? (
+                            <Check className="w-4 h-4 text-emerald-600 shrink-0" />
+                          ) : (
+                            <span className="text-[9px] text-slate-400 font-semibold shrink-0">선택</span>
+                          )}
+                        </div>
+
+                        {/* Away */}
+                        <div 
+                          onClick={() => match.awayTeam && handleBracketMatchWinner('roundOf16', match.id, match.awayTeam)}
+                          className={`flex items-center justify-between p-2 rounded-lg cursor-pointer transition border border-transparent select-none min-h-[44px] ${
+                            match.winner === match.awayTeam 
+                              ? 'bg-emerald-50 text-emerald-800 font-extrabold border-emerald-200' 
+                              : 'hover:bg-slate-50 text-slate-600'
+                          }`}
+                        >
+                          <span className="flex items-center gap-2 min-w-0 flex-1">
+                            <span className="text-sm shrink-0">{getCountryFlag(match.awayTeam || '')}</span>
+                            <span className="truncate text-xs font-medium">{match.awayTeam || '32강 승자'}</span>
+                          </span>
+                          {match.winner === match.awayTeam ? (
+                            <Check className="w-4 h-4 text-emerald-600 shrink-0" />
+                          ) : (
+                            <span className="text-[9px] text-slate-400 font-semibold shrink-0">선택</span>
+                          )}
+                        </div>
                       </div>
                     </div>
                   ))}
-                </div>
 
-                {/* 4. Left Semi Finals (Match 1) */}
-                <div className="flex flex-col justify-around h-full gap-0.5">
-                  {data.bracket.semiFinals.slice(0, 1).map(match => (
-                    <div key={match.id} className="bg-white border border-emerald-100 rounded-lg p-2 shadow-2xs text-[10px] space-y-1 hover:border-emerald-400 transition relative">
-                      <span className="text-[7.5px] text-emerald-600 font-bold absolute right-1.5 top-0.5">준결승 #1</span>
-                      {/* Home */}
-                      <div 
-                        onClick={() => match.homeTeam && handleBracketMatchWinner('semiFinals', match.id, match.homeTeam)}
-                        className={`flex items-center justify-between p-1 rounded cursor-pointer transition select-none ${
-                          match.winner === match.homeTeam 
-                            ? 'bg-emerald-50 text-emerald-800 font-semibold border border-emerald-200' 
-                            : 'hover:bg-slate-50 text-slate-600'
-                        }`}
-                      >
-                        <span className="flex items-center gap-1 min-w-0 flex-1">
-                          <span className="text-[12px] shrink-0">{getCountryFlag(match.homeTeam || '')}</span>
-                          <span className="truncate font-semibold">{match.homeTeam || '8강 승자'}</span>
-                        </span>
-                        {match.winner === match.homeTeam && <Check className="w-2.5 h-2.5 text-emerald-600 shrink-0" />}
+                  {selectedBracketRound === 'quarterFinals' && data.bracket.quarterFinals.map(match => (
+                    <div key={match.id} className="bg-white border border-slate-200 rounded-xl p-3 shadow-3xs space-y-2 hover:border-emerald-400 transition relative">
+                      <div className="flex justify-between items-center border-b border-slate-100 pb-1.5">
+                        <span className="text-[10px] text-slate-500 font-mono font-bold">매치 #{match.matchNumber}</span>
+                        <span className="text-[10px] text-emerald-600 font-bold bg-emerald-50 px-1.5 py-0.5 rounded-md">{match.date} {match.time}</span>
                       </div>
-                      {/* Away */}
-                      <div 
-                        onClick={() => match.awayTeam && handleBracketMatchWinner('semiFinals', match.id, match.awayTeam)}
-                        className={`flex items-center justify-between p-1 rounded cursor-pointer transition select-none ${
-                          match.winner === match.awayTeam 
-                            ? 'bg-emerald-50 text-emerald-800 font-semibold border border-emerald-200' 
-                            : 'hover:bg-slate-50 text-slate-600'
-                        }`}
-                      >
-                        <span className="flex items-center gap-1 min-w-0 flex-1">
-                          <span className="text-[12px] shrink-0">{getCountryFlag(match.awayTeam || '')}</span>
-                          <span className="truncate font-semibold">{match.awayTeam || '8강 승자'}</span>
-                        </span>
-                        {match.winner === match.awayTeam && <Check className="w-2.5 h-2.5 text-emerald-600 shrink-0" />}
+                      
+                      <div className="space-y-1.5">
+                        {/* Home */}
+                        <div 
+                          onClick={() => match.homeTeam && handleBracketMatchWinner('quarterFinals', match.id, match.homeTeam)}
+                          className={`flex items-center justify-between p-2 rounded-lg cursor-pointer transition border border-transparent select-none min-h-[44px] ${
+                            match.winner === match.homeTeam 
+                              ? 'bg-emerald-50 text-emerald-800 font-extrabold border-emerald-200' 
+                              : 'hover:bg-slate-50 text-slate-600'
+                          }`}
+                        >
+                          <span className="flex items-center gap-2 min-w-0 flex-1">
+                            <span className="text-sm shrink-0">{getCountryFlag(match.homeTeam || '')}</span>
+                            <span className="truncate text-xs font-medium">{match.homeTeam || '16강 승자'}</span>
+                          </span>
+                          {match.winner === match.homeTeam ? (
+                            <Check className="w-4 h-4 text-emerald-600 shrink-0" />
+                          ) : (
+                            <span className="text-[9px] text-slate-400 font-semibold shrink-0">선택</span>
+                          )}
+                        </div>
+
+                        {/* Away */}
+                        <div 
+                          onClick={() => match.awayTeam && handleBracketMatchWinner('quarterFinals', match.id, match.awayTeam)}
+                          className={`flex items-center justify-between p-2 rounded-lg cursor-pointer transition border border-transparent select-none min-h-[44px] ${
+                            match.winner === match.awayTeam 
+                              ? 'bg-emerald-50 text-emerald-800 font-extrabold border-emerald-200' 
+                              : 'hover:bg-slate-50 text-slate-600'
+                          }`}
+                        >
+                          <span className="flex items-center gap-2 min-w-0 flex-1">
+                            <span className="text-sm shrink-0">{getCountryFlag(match.awayTeam || '')}</span>
+                            <span className="truncate text-xs font-medium">{match.awayTeam || '16강 승자'}</span>
+                          </span>
+                          {match.winner === match.awayTeam ? (
+                            <Check className="w-4 h-4 text-emerald-600 shrink-0" />
+                          ) : (
+                            <span className="text-[9px] text-slate-400 font-semibold shrink-0">선택</span>
+                          )}
+                        </div>
                       </div>
                     </div>
                   ))}
-                </div>
 
-                {/* 5. Center Grand Final (Perfect Vertical Middle alignment) */}
-                <div className="flex flex-col justify-center items-center h-full">
-                  {data.bracket.final.map(match => (
-                    <div key={match.id} className="w-full bg-gradient-to-br from-amber-500/10 to-orange-500/10 border-2 border-amber-300 rounded-xl p-2.5 shadow-sm space-y-2 text-[10px] hover:border-amber-400 transition relative animate-fade-in">
-                      <div className="text-[8px] text-amber-800 font-black tracking-wider uppercase text-center flex items-center justify-center gap-0.5">
-                        <Trophy className="w-3 h-3 text-amber-550" />
-                        <span>Grand Final</span>
+                  {selectedBracketRound === 'semiFinals' && data.bracket.semiFinals.map(match => (
+                    <div key={match.id} className="bg-white border border-slate-200 rounded-xl p-3 shadow-3xs space-y-2 hover:border-emerald-400 transition relative">
+                      <div className="flex justify-between items-center border-b border-slate-100 pb-1.5">
+                        <span className="text-[10px] text-slate-500 font-mono font-bold">매치 #{match.matchNumber}</span>
+                        <span className="text-[10px] text-emerald-600 font-bold bg-emerald-50 px-1.5 py-0.5 rounded-md">{match.date} {match.time}</span>
+                      </div>
+                      
+                      <div className="space-y-1.5">
+                        {/* Home */}
+                        <div 
+                          onClick={() => match.homeTeam && handleBracketMatchWinner('semiFinals', match.id, match.homeTeam)}
+                          className={`flex items-center justify-between p-2.5 rounded-lg cursor-pointer transition border border-transparent select-none min-h-[44px] ${
+                            match.winner === match.homeTeam 
+                              ? 'bg-emerald-50 text-emerald-800 font-extrabold border-emerald-200' 
+                              : 'hover:bg-slate-50 text-slate-600'
+                          }`}
+                        >
+                          <span className="flex items-center gap-2 min-w-0 flex-1">
+                            <span className="text-md shrink-0">{getCountryFlag(match.homeTeam || '')}</span>
+                            <span className="truncate text-xs font-bold">{match.homeTeam || '8강 승자'}</span>
+                          </span>
+                          {match.winner === match.homeTeam ? (
+                            <Check className="w-4 h-4 text-emerald-600 shrink-0" />
+                          ) : (
+                            <span className="text-[9px] text-slate-400 font-semibold shrink-0">선택</span>
+                          )}
+                        </div>
+
+                        {/* Away */}
+                        <div 
+                          onClick={() => match.awayTeam && handleBracketMatchWinner('semiFinals', match.id, match.awayTeam)}
+                          className={`flex items-center justify-between p-2.5 rounded-lg cursor-pointer transition border border-transparent select-none min-h-[44px] ${
+                            match.winner === match.awayTeam 
+                              ? 'bg-emerald-50 text-emerald-800 font-extrabold border-emerald-200' 
+                              : 'hover:bg-slate-50 text-slate-600'
+                          }`}
+                        >
+                          <span className="flex items-center gap-2 min-w-0 flex-1">
+                            <span className="text-md shrink-0">{getCountryFlag(match.awayTeam || '')}</span>
+                            <span className="truncate text-xs font-bold">{match.awayTeam || '8강 승자'}</span>
+                          </span>
+                          {match.winner === match.awayTeam ? (
+                            <Check className="w-4 h-4 text-emerald-600 shrink-0" />
+                          ) : (
+                            <span className="text-[9px] text-slate-400 font-semibold shrink-0">선택</span>
+                          )}
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+
+                  {selectedBracketRound === 'final' && data.bracket.final.map(match => (
+                    <div key={match.id} className="col-span-full max-w-md mx-auto bg-gradient-to-br from-amber-500/10 to-orange-500/10 border-2 border-amber-300 rounded-2xl p-5 shadow-sm space-y-4 hover:border-amber-400 transition relative w-full">
+                      <div className="text-xs text-amber-800 font-black tracking-wider uppercase text-center flex items-center justify-center gap-1.5 border-b border-amber-200/60 pb-2.5">
+                        <Trophy className="w-4 h-4 text-amber-600 animate-bounce" />
+                        <span>Grand Final (월드컵 결승전)</span>
+                        <Trophy className="w-4 h-4 text-amber-600 animate-bounce" />
                       </div>
 
-                      <div className="space-y-1">
+                      <div className="space-y-2">
                         {/* Home Finalist */}
                         <div 
                           onClick={() => match.homeTeam && handleBracketMatchWinner('final', match.id, match.homeTeam)}
-                          className={`flex items-center justify-between p-1.5 rounded-lg cursor-pointer transition border select-none ${
+                          className={`flex items-center justify-between p-3 rounded-xl cursor-pointer transition border select-none min-h-[48px] ${
                             match.winner === match.homeTeam 
-                              ? 'bg-amber-100 text-amber-950 border-amber-400 font-black' 
+                              ? 'bg-amber-100 text-amber-950 border-amber-400 font-black shadow-xs' 
                               : 'bg-white hover:bg-slate-50 border-slate-100 text-slate-700'
                           }`}
                         >
-                          <span className="flex items-center gap-1 min-w-0 flex-1">
-                            <span className="text-sm shrink-0">{getCountryFlag(match.homeTeam || '')}</span>
-                            <span className="truncate font-bold">{match.homeTeam || '준결승 승자1'}</span>
+                          <span className="flex items-center gap-2.5 min-w-0 flex-1">
+                            <span className="text-lg shrink-0">{getCountryFlag(match.homeTeam || '')}</span>
+                            <span className="truncate text-sm font-bold">{match.homeTeam || '준결승 승자1'}</span>
                           </span>
                           {match.winner === match.homeTeam ? (
-                            <Award className="w-3.5 h-3.5 text-amber-600 shrink-0" />
+                            <Award className="w-5 h-5 text-amber-600 shrink-0" />
                           ) : (
-                            <span className="text-[7.5px] text-slate-400 font-semibold shrink-0">선택</span>
+                            <span className="text-[10px] text-slate-400 font-bold shrink-0 bg-slate-100 px-2 py-0.5 rounded">터치 후 우승!</span>
                           )}
                         </div>
 
                         {/* Away Finalist */}
                         <div 
                           onClick={() => match.awayTeam && handleBracketMatchWinner('final', match.id, match.awayTeam)}
-                          className={`flex items-center justify-between p-1.5 rounded-lg cursor-pointer transition border select-none ${
+                          className={`flex items-center justify-between p-3 rounded-xl cursor-pointer transition border select-none min-h-[48px] ${
                             match.winner === match.awayTeam 
-                              ? 'bg-amber-100 text-amber-950 border-amber-400 font-black' 
+                              ? 'bg-amber-100 text-amber-950 border-amber-400 font-black shadow-xs' 
                               : 'bg-white hover:bg-slate-50 border-slate-100 text-slate-700'
                           }`}
                         >
-                          <span className="flex items-center gap-1 min-w-0 flex-1">
-                            <span className="text-sm shrink-0">{getCountryFlag(match.awayTeam || '')}</span>
-                            <span className="truncate font-bold">{match.awayTeam || '준결승 승자2'}</span>
+                          <span className="flex items-center gap-2.5 min-w-0 flex-1">
+                            <span className="text-lg shrink-0">{getCountryFlag(match.awayTeam || '')}</span>
+                            <span className="truncate text-sm font-bold">{match.awayTeam || '준결승 승자2'}</span>
                           </span>
                           {match.winner === match.awayTeam ? (
-                            <Award className="w-3.5 h-3.5 text-amber-600 shrink-0" />
+                            <Award className="w-5 h-5 text-amber-600 shrink-0" />
                           ) : (
-                            <span className="text-[7.5px] text-slate-400 font-semibold shrink-0">선택</span>
+                            <span className="text-[10px] text-slate-400 font-bold shrink-0 bg-slate-100 px-2 py-0.5 rounded">터치 후 우승!</span>
                           )}
                         </div>
                       </div>
 
                       {match.winner && (
-                        <div className="bg-amber-500 text-white py-1 px-1.5 rounded-md text-center text-[9px] font-black tracking-wide shadow-sm animate-bounce">
-                          🏆 {getCountryFlag(match.winner)} {match.winner} 우승!
+                        <div className="bg-amber-550 text-white p-3 rounded-xl text-center text-xs font-black tracking-widest shadow-md animate-pulse flex items-center justify-center gap-2">
+                          🏆 {getCountryFlag(match.winner)} {match.winner} 우승 달성! 🏆
                         </div>
                       )}
                     </div>
                   ))}
                 </div>
-
-                {/* 6. Right Semi Finals (Match 2) */}
-                <div className="flex flex-col justify-around h-full gap-0.5">
-                  {data.bracket.semiFinals.slice(1, 2).map(match => (
-                    <div key={match.id} className="bg-white border border-emerald-100 rounded-lg p-2 shadow-2xs text-[10px] space-y-1 hover:border-emerald-400 transition relative">
-                      <span className="text-[7.5px] text-emerald-600 font-bold absolute right-1.5 top-0.5">준결승 #2</span>
-                      {/* Home */}
-                      <div 
-                        onClick={() => match.homeTeam && handleBracketMatchWinner('semiFinals', match.id, match.homeTeam)}
-                        className={`flex items-center justify-between p-1 rounded cursor-pointer transition select-none ${
-                          match.winner === match.homeTeam 
-                            ? 'bg-emerald-50 text-emerald-800 font-semibold border border-emerald-200' 
-                            : 'hover:bg-slate-50 text-slate-600'
-                        }`}
-                      >
-                        <span className="flex items-center gap-1 min-w-0 flex-1">
-                          <span className="text-[12px] shrink-0">{getCountryFlag(match.homeTeam || '')}</span>
-                          <span className="truncate font-semibold">{match.homeTeam || '8강 승자'}</span>
-                        </span>
-                        {match.winner === match.homeTeam && <Check className="w-2.5 h-2.5 text-emerald-600 shrink-0" />}
-                      </div>
-                      {/* Away */}
-                      <div 
-                        onClick={() => match.awayTeam && handleBracketMatchWinner('semiFinals', match.id, match.awayTeam)}
-                        className={`flex items-center justify-between p-1 rounded cursor-pointer transition select-none ${
-                          match.winner === match.awayTeam 
-                            ? 'bg-emerald-50 text-emerald-800 font-semibold border border-emerald-200' 
-                            : 'hover:bg-slate-50 text-slate-600'
-                        }`}
-                      >
-                        <span className="flex items-center gap-1 min-w-0 flex-1">
-                          <span className="text-[12px] shrink-0">{getCountryFlag(match.awayTeam || '')}</span>
-                          <span className="truncate font-semibold">{match.awayTeam || '8강 승자'}</span>
-                        </span>
-                        {match.winner === match.awayTeam && <Check className="w-2.5 h-2.5 text-emerald-600 shrink-0" />}
-                      </div>
-                    </div>
-                  ))}
-                </div>
-
-                {/* 7. Right Quarter Finals (Matches 3 to 4) */}
-                <div className="flex flex-col justify-around h-full gap-0.5">
-                  {data.bracket.quarterFinals.slice(2, 4).map(match => (
-                    <div key={match.id} className="bg-white border border-slate-200 rounded-lg p-1.5 shadow-3xs text-[10px] space-y-0.5 hover:border-emerald-400 transition relative">
-                      <span className="text-[7px] text-slate-400 font-mono absolute right-1 top-[1px]">#{match.matchNumber}</span>
-                      {/* Home */}
-                      <div 
-                        onClick={() => match.homeTeam && handleBracketMatchWinner('quarterFinals', match.id, match.homeTeam)}
-                        className={`flex items-center justify-between px-1.5 py-0.5 rounded cursor-pointer transition select-none ${
-                          match.winner === match.homeTeam 
-                            ? 'bg-emerald-50 text-emerald-800 font-bold border border-emerald-100/50' 
-                            : 'hover:bg-slate-50 text-slate-600'
-                        }`}
-                      >
-                        <span className="flex items-center gap-1 min-w-0 flex-1">
-                          <span className="text-xs shrink-0">{getCountryFlag(match.homeTeam || '')}</span>
-                          <span className="truncate font-medium">{match.homeTeam || '16강 승자'}</span>
-                        </span>
-                        {match.winner === match.homeTeam && <Check className="w-2.5 h-2.5 text-emerald-600 shrink-0" />}
-                      </div>
-                      {/* Away */}
-                      <div 
-                        onClick={() => match.awayTeam && handleBracketMatchWinner('quarterFinals', match.id, match.awayTeam)}
-                        className={`flex items-center justify-between px-1.5 py-0.5 rounded cursor-pointer transition select-none ${
-                          match.winner === match.awayTeam 
-                            ? 'bg-emerald-50 text-emerald-800 font-bold border border-emerald-100/50' 
-                            : 'hover:bg-slate-50 text-slate-600'
-                        }`}
-                      >
-                        <span className="flex items-center gap-1 min-w-0 flex-1">
-                          <span className="text-xs shrink-0">{getCountryFlag(match.awayTeam || '')}</span>
-                          <span className="truncate font-medium">{match.awayTeam || '16강 승자'}</span>
-                        </span>
-                        {match.winner === match.awayTeam && <Check className="w-2.5 h-2.5 text-emerald-600 shrink-0" />}
-                      </div>
-                    </div>
-                  ))}
-                </div>
-
-                {/* 8. Right Round of 16 (Matches 5 to 8) */}
-                <div className="flex flex-col justify-around h-full gap-0.5">
-                  {data.bracket.roundOf16.slice(4, 8).map(match => (
-                    <div key={match.id} className="bg-white border border-slate-200 rounded-lg p-1.5 shadow-3xs text-[10px] space-y-0.5 hover:border-emerald-400 transition relative">
-                      <span className="text-[7px] text-slate-400 font-mono absolute right-1 top-[1px]">#{match.matchNumber}</span>
-                      {/* Home */}
-                      <div 
-                        onClick={() => match.homeTeam && handleBracketMatchWinner('roundOf16', match.id, match.homeTeam)}
-                        className={`flex items-center justify-between px-1.5 py-0.5 rounded cursor-pointer transition select-none ${
-                          match.winner === match.homeTeam 
-                            ? 'bg-emerald-50 text-emerald-800 font-bold border border-emerald-100/50' 
-                            : 'hover:bg-slate-50 text-slate-600'
-                        }`}
-                      >
-                        <span className="flex items-center gap-1 min-w-0 flex-1">
-                          <span className="text-xs shrink-0">{getCountryFlag(match.homeTeam || '')}</span>
-                          <span className="truncate font-medium">{match.homeTeam || '32강 승자'}</span>
-                        </span>
-                        {match.winner === match.homeTeam && <Check className="w-2.5 h-2.5 text-emerald-600 shrink-0" />}
-                      </div>
-                      {/* Away */}
-                      <div 
-                        onClick={() => match.awayTeam && handleBracketMatchWinner('roundOf16', match.id, match.awayTeam)}
-                        className={`flex items-center justify-between px-1.5 py-0.5 rounded cursor-pointer transition select-none ${
-                          match.winner === match.awayTeam 
-                            ? 'bg-emerald-50 text-emerald-800 font-bold border border-emerald-100/50' 
-                            : 'hover:bg-slate-50 text-slate-600'
-                        }`}
-                      >
-                        <span className="flex items-center gap-1 min-w-0 flex-1">
-                          <span className="text-xs shrink-0">{getCountryFlag(match.awayTeam || '')}</span>
-                          <span className="truncate font-medium">{match.awayTeam || '32강 승자'}</span>
-                        </span>
-                        {match.winner === match.awayTeam && <Check className="w-2.5 h-2.5 text-emerald-600 shrink-0" />}
-                      </div>
-                    </div>
-                  ))}
-                </div>
-
-                {/* 9. Right Round of 32 (Matches 9 to 16) */}
-                <div className="flex flex-col justify-around h-full gap-0.5">
-                  {data.bracket.roundOf32.slice(8, 16).map(match => (
-                    <div key={match.id} className="bg-white border border-slate-200 rounded-lg p-1 shadow-3xs text-[10px] space-y-0.5 hover:border-emerald-400 transition relative">
-                      <span className="text-[7px] text-slate-400 font-mono absolute right-1 top-[1px]">#{match.matchNumber}</span>
-                      {/* Home */}
-                      <div 
-                        onClick={() => match.homeTeam && handleBracketMatchWinner('roundOf32', match.id, match.homeTeam)}
-                        className={`flex items-center justify-between px-1.5 py-0.5 rounded cursor-pointer transition select-none ${
-                          match.winner === match.homeTeam 
-                            ? 'bg-emerald-50 text-emerald-800 font-bold border border-emerald-100/50' 
-                            : 'hover:bg-slate-50 text-slate-600'
-                        }`}
-                      >
-                        <span className="flex items-center gap-1 min-w-0 flex-1">
-                          <span className="text-xs shrink-0">{getCountryFlag(match.homeTeam || '')}</span>
-                          <span className="truncate font-medium">{match.homeTeam || '미정'}</span>
-                        </span>
-                        {match.winner === match.homeTeam && <Check className="w-2.5 h-2.5 text-emerald-600 shrink-0" />}
-                      </div>
-                      {/* Away */}
-                      <div 
-                        onClick={() => match.awayTeam && handleBracketMatchWinner('roundOf32', match.id, match.awayTeam)}
-                        className={`flex items-center justify-between px-1.5 py-0.5 rounded cursor-pointer transition select-none ${
-                          match.winner === match.awayTeam 
-                            ? 'bg-emerald-50 text-emerald-800 font-bold border border-emerald-100/50' 
-                            : 'hover:bg-slate-50 text-slate-600'
-                        }`}
-                      >
-                        <span className="flex items-center gap-1 min-w-0 flex-1">
-                          <span className="text-xs shrink-0">{getCountryFlag(match.awayTeam || '')}</span>
-                          <span className="truncate font-medium">{match.awayTeam || '미정'}</span>
-                        </span>
-                        {match.winner === match.awayTeam && <Check className="w-2.5 h-2.5 text-emerald-600 shrink-0" />}
-                      </div>
-                    </div>
-                  ))}
-                </div>
-
               </div>
-            </div>
+            )}
+
+            {/* 2. 전체 트리 맵 뷰 */}
+            {bracketViewMode === 'tree' && (
+              <div className="bg-slate-50/50 rounded-2xl border border-slate-200/60 p-3 overflow-x-auto scrollbar-thin select-none touch-pan-x" id="tree-container">
+                <div className="min-w-[1250px] space-y-2">
+                  {/* Header Titles Row */}
+                  <div className="grid grid-cols-9 gap-1 text-[9px] text-slate-500 font-bold text-center uppercase tracking-wider mb-2 border-b border-slate-200/50 pb-1.5">
+                    <div>32강전 (A)</div>
+                    <div>16강전 (A)</div>
+                    <div>8강전 (A)</div>
+                    <div>준결승 (A)</div>
+                    <div className="text-amber-600 font-black">월드컵 결승전</div>
+                    <div>준결승 (B)</div>
+                    <div>8강전 (B)</div>
+                    <div>16강전 (B)</div>
+                    <div>32강전 (B)</div>
+                  </div>
+
+                  {/* The Bracket Symmetrical Grid */}
+                  <div className="grid grid-cols-9 gap-1 h-[500px] items-stretch" id="symmetrical-bracket">
+                    
+                    {/* 1. Left Round of 32 (Matches 1 to 8) */}
+                    <div className="flex flex-col justify-around h-full gap-0.5">
+                      {data.bracket.roundOf32.slice(0, 8).map(match => (
+                        <div key={match.id} className="bg-white border border-slate-200 rounded-lg p-1 shadow-3xs text-[10px] space-y-0.5 hover:border-emerald-400 transition relative">
+                          <span className="text-[7px] text-slate-400 font-mono absolute right-1 top-[1px]">#{match.matchNumber}</span>
+                          {/* Home */}
+                          <div 
+                            onClick={() => match.homeTeam && handleBracketMatchWinner('roundOf32', match.id, match.homeTeam)}
+                            className={`flex items-center justify-between px-1.5 py-0.5 rounded cursor-pointer transition select-none ${
+                              match.winner === match.homeTeam 
+                                ? 'bg-emerald-50 text-emerald-800 font-bold border border-emerald-100/50' 
+                                : 'hover:bg-slate-50 text-slate-600'
+                            }`}
+                          >
+                            <span className="flex items-center gap-1 min-w-0 flex-1">
+                              <span className="text-xs shrink-0">{getCountryFlag(match.homeTeam || '')}</span>
+                              <span className="truncate font-medium">{match.homeTeam || '미정'}</span>
+                            </span>
+                            {match.winner === match.homeTeam && <Check className="w-2.5 h-2.5 text-emerald-600 shrink-0" />}
+                          </div>
+                          {/* Away */}
+                          <div 
+                            onClick={() => match.awayTeam && handleBracketMatchWinner('roundOf32', match.id, match.awayTeam)}
+                            className={`flex items-center justify-between px-1.5 py-0.5 rounded cursor-pointer transition select-none ${
+                              match.winner === match.awayTeam 
+                                ? 'bg-emerald-50 text-emerald-800 font-bold border border-emerald-100/50' 
+                                : 'hover:bg-slate-50 text-slate-600'
+                            }`}
+                          >
+                            <span className="flex items-center gap-1 min-w-0 flex-1">
+                              <span className="text-xs shrink-0">{getCountryFlag(match.awayTeam || '')}</span>
+                              <span className="truncate font-medium">{match.awayTeam || '미정'}</span>
+                            </span>
+                            {match.winner === match.awayTeam && <Check className="w-2.5 h-2.5 text-emerald-600 shrink-0" />}
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+
+                    {/* 2. Left Round of 16 (Matches 1 to 4) */}
+                    <div className="flex flex-col justify-around h-full gap-0.5">
+                      {data.bracket.roundOf16.slice(0, 4).map(match => (
+                        <div key={match.id} className="bg-white border border-slate-200 rounded-lg p-1.5 shadow-3xs text-[10px] space-y-0.5 hover:border-emerald-400 transition relative">
+                          <span className="text-[7px] text-slate-400 font-mono absolute right-1 top-[1px]">#{match.matchNumber}</span>
+                          {/* Home */}
+                          <div 
+                            onClick={() => match.homeTeam && handleBracketMatchWinner('roundOf16', match.id, match.homeTeam)}
+                            className={`flex items-center justify-between px-1.5 py-0.5 rounded cursor-pointer transition select-none ${
+                              match.winner === match.homeTeam 
+                                ? 'bg-emerald-50 text-emerald-800 font-bold border border-emerald-100/50' 
+                                : 'hover:bg-slate-50 text-slate-600'
+                            }`}
+                          >
+                            <span className="flex items-center gap-1 min-w-0 flex-1">
+                              <span className="text-xs shrink-0">{getCountryFlag(match.homeTeam || '')}</span>
+                              <span className="truncate font-medium">{match.homeTeam || '32강 승자'}</span>
+                            </span>
+                            {match.winner === match.homeTeam && <Check className="w-2.5 h-2.5 text-emerald-600 shrink-0" />}
+                          </div>
+                          {/* Away */}
+                          <div 
+                            onClick={() => match.awayTeam && handleBracketMatchWinner('roundOf16', match.id, match.awayTeam)}
+                            className={`flex items-center justify-between px-1.5 py-0.5 rounded cursor-pointer transition select-none ${
+                              match.winner === match.awayTeam 
+                                ? 'bg-emerald-50 text-emerald-800 font-bold border border-emerald-100/50' 
+                                : 'hover:bg-slate-50 text-slate-600'
+                            }`}
+                          >
+                            <span className="flex items-center gap-1 min-w-0 flex-1">
+                              <span className="text-xs shrink-0">{getCountryFlag(match.awayTeam || '')}</span>
+                              <span className="truncate font-medium">{match.awayTeam || '32강 승자'}</span>
+                            </span>
+                            {match.winner === match.awayTeam && <Check className="w-2.5 h-2.5 text-emerald-600 shrink-0" />}
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+
+                    {/* 3. Left Quarter Finals (Matches 1 to 2) */}
+                    <div className="flex flex-col justify-around h-full gap-0.5">
+                      {data.bracket.quarterFinals.slice(0, 2).map(match => (
+                        <div key={match.id} className="bg-white border border-slate-200 rounded-lg p-1.5 shadow-3xs text-[10px] space-y-0.5 hover:border-emerald-400 transition relative">
+                          <span className="text-[7px] text-slate-400 font-mono absolute right-1 top-[1px]">#{match.matchNumber}</span>
+                          {/* Home */}
+                          <div 
+                            onClick={() => match.homeTeam && handleBracketMatchWinner('quarterFinals', match.id, match.homeTeam)}
+                            className={`flex items-center justify-between px-1.5 py-0.5 rounded cursor-pointer transition select-none ${
+                              match.winner === match.homeTeam 
+                                ? 'bg-emerald-50 text-emerald-800 font-bold border border-emerald-100/50' 
+                                : 'hover:bg-slate-50 text-slate-600'
+                            }`}
+                          >
+                            <span className="flex items-center gap-1 min-w-0 flex-1">
+                              <span className="text-xs shrink-0">{getCountryFlag(match.homeTeam || '')}</span>
+                              <span className="truncate font-medium">{match.homeTeam || '16강 승자'}</span>
+                            </span>
+                            {match.winner === match.homeTeam && <Check className="w-2.5 h-2.5 text-emerald-600 shrink-0" />}
+                          </div>
+                          {/* Away */}
+                          <div 
+                            onClick={() => match.awayTeam && handleBracketMatchWinner('quarterFinals', match.id, match.awayTeam)}
+                            className={`flex items-center justify-between px-1.5 py-0.5 rounded cursor-pointer transition select-none ${
+                              match.winner === match.awayTeam 
+                                ? 'bg-emerald-50 text-emerald-800 font-bold border border-emerald-100/50' 
+                                : 'hover:bg-slate-50 text-slate-600'
+                            }`}
+                          >
+                            <span className="flex items-center gap-1 min-w-0 flex-1">
+                              <span className="text-xs shrink-0">{getCountryFlag(match.awayTeam || '')}</span>
+                              <span className="truncate font-medium">{match.awayTeam || '16강 승자'}</span>
+                            </span>
+                            {match.winner === match.awayTeam && <Check className="w-2.5 h-2.5 text-emerald-600 shrink-0" />}
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+
+                    {/* 4. Left Semi Finals (Match 1) */}
+                    <div className="flex flex-col justify-around h-full gap-0.5">
+                      {data.bracket.semiFinals.slice(0, 1).map(match => (
+                        <div key={match.id} className="bg-white border border-emerald-100 rounded-lg p-2 shadow-2xs text-[10px] space-y-1 hover:border-emerald-400 transition relative">
+                          <span className="text-[7.5px] text-emerald-600 font-bold absolute right-1.5 top-0.5">준결승 #1</span>
+                          {/* Home */}
+                          <div 
+                            onClick={() => match.homeTeam && handleBracketMatchWinner('semiFinals', match.id, match.homeTeam)}
+                            className={`flex items-center justify-between p-1 rounded cursor-pointer transition select-none ${
+                              match.winner === match.homeTeam 
+                                ? 'bg-emerald-50 text-emerald-800 font-semibold border border-emerald-200' 
+                                : 'hover:bg-slate-50 text-slate-600'
+                            }`}
+                          >
+                            <span className="flex items-center gap-1 min-w-0 flex-1">
+                              <span className="text-[12px] shrink-0">{getCountryFlag(match.homeTeam || '')}</span>
+                              <span className="truncate font-semibold">{match.homeTeam || '8강 승자'}</span>
+                            </span>
+                            {match.winner === match.homeTeam && <Check className="w-2.5 h-2.5 text-emerald-600 shrink-0" />}
+                          </div>
+                          {/* Away */}
+                          <div 
+                            onClick={() => match.awayTeam && handleBracketMatchWinner('semiFinals', match.id, match.awayTeam)}
+                            className={`flex items-center justify-between p-1 rounded cursor-pointer transition select-none ${
+                              match.winner === match.awayTeam 
+                                ? 'bg-emerald-50 text-emerald-800 font-semibold border border-emerald-200' 
+                                : 'hover:bg-slate-50 text-slate-600'
+                            }`}
+                          >
+                            <span className="flex items-center gap-1 min-w-0 flex-1">
+                              <span className="text-[12px] shrink-0">{getCountryFlag(match.awayTeam || '')}</span>
+                              <span className="truncate font-semibold">{match.awayTeam || '8강 승자'}</span>
+                            </span>
+                            {match.winner === match.awayTeam && <Check className="w-2.5 h-2.5 text-emerald-600 shrink-0" />}
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+
+                    {/* 5. Center Grand Final (Perfect Vertical Middle alignment) */}
+                    <div className="flex flex-col justify-center items-center h-full">
+                      {data.bracket.final.map(match => (
+                        <div key={match.id} className="w-full bg-gradient-to-br from-amber-500/10 to-orange-500/10 border-2 border-amber-300 rounded-xl p-2.5 shadow-sm space-y-2 text-[10px] hover:border-amber-400 transition relative animate-fade-in">
+                          <div className="text-[8px] text-amber-800 font-black tracking-wider uppercase text-center flex items-center justify-center gap-0.5">
+                            <Trophy className="w-3 h-3 text-amber-550" />
+                            <span>Grand Final</span>
+                          </div>
+
+                          <div className="space-y-1">
+                            {/* Home Finalist */}
+                            <div 
+                              onClick={() => match.homeTeam && handleBracketMatchWinner('final', match.id, match.homeTeam)}
+                              className={`flex items-center justify-between p-1.5 rounded-lg cursor-pointer transition border select-none ${
+                                match.winner === match.homeTeam 
+                                  ? 'bg-amber-100 text-amber-950 border-amber-400 font-black' 
+                                  : 'bg-white hover:bg-slate-50 border-slate-100 text-slate-700'
+                              }`}
+                            >
+                              <span className="flex items-center gap-1 min-w-0 flex-1">
+                                <span className="text-sm shrink-0">{getCountryFlag(match.homeTeam || '')}</span>
+                                <span className="truncate font-bold">{match.homeTeam || '준결승 승자1'}</span>
+                              </span>
+                              {match.winner === match.homeTeam ? (
+                                <Award className="w-3.5 h-3.5 text-amber-600 shrink-0" />
+                              ) : (
+                                <span className="text-[7.5px] text-slate-400 font-semibold shrink-0">선택</span>
+                              )}
+                            </div>
+
+                            {/* Away Finalist */}
+                            <div 
+                              onClick={() => match.awayTeam && handleBracketMatchWinner('final', match.id, match.awayTeam)}
+                              className={`flex items-center justify-between p-1.5 rounded-lg cursor-pointer transition border select-none ${
+                                match.winner === match.awayTeam 
+                                  ? 'bg-amber-100 text-amber-950 border-amber-400 font-black' 
+                                  : 'bg-white hover:bg-slate-50 border-slate-100 text-slate-700'
+                              }`}
+                            >
+                              <span className="flex items-center gap-1 min-w-0 flex-1">
+                                <span className="text-sm shrink-0">{getCountryFlag(match.awayTeam || '')}</span>
+                                <span className="truncate font-bold">{match.awayTeam || '준결승 승자2'}</span>
+                              </span>
+                              {match.winner === match.awayTeam ? (
+                                <Award className="w-3.5 h-3.5 text-amber-600 shrink-0" />
+                              ) : (
+                                <span className="text-[7.5px] text-slate-400 font-semibold shrink-0">선택</span>
+                              )}
+                            </div>
+                          </div>
+
+                          {match.winner && (
+                            <div className="bg-amber-500 text-white py-1 px-1.5 rounded-md text-center text-[9px] font-black tracking-wide shadow-sm animate-bounce">
+                              🏆 {getCountryFlag(match.winner)} {match.winner} 우승!
+                            </div>
+                          )}
+                        </div>
+                      ))}
+                    </div>
+
+                    {/* 6. Right Semi Finals (Match 2) */}
+                    <div className="flex flex-col justify-around h-full gap-0.5">
+                      {data.bracket.semiFinals.slice(1, 2).map(match => (
+                        <div key={match.id} className="bg-white border border-emerald-100 rounded-lg p-2 shadow-2xs text-[10px] space-y-1 hover:border-emerald-400 transition relative">
+                          <span className="text-[7.5px] text-emerald-600 font-bold absolute right-1.5 top-0.5">준결승 #2</span>
+                          {/* Home */}
+                          <div 
+                            onClick={() => match.homeTeam && handleBracketMatchWinner('semiFinals', match.id, match.homeTeam)}
+                            className={`flex items-center justify-between p-1 rounded cursor-pointer transition select-none ${
+                              match.winner === match.homeTeam 
+                                ? 'bg-emerald-50 text-emerald-800 font-semibold border border-emerald-200' 
+                                : 'hover:bg-slate-50 text-slate-600'
+                            }`}
+                          >
+                            <span className="flex items-center gap-1 min-w-0 flex-1">
+                              <span className="text-[12px] shrink-0">{getCountryFlag(match.homeTeam || '')}</span>
+                              <span className="truncate font-semibold">{match.homeTeam || '8강 승자'}</span>
+                            </span>
+                            {match.winner === match.homeTeam && <Check className="w-2.5 h-2.5 text-emerald-600 shrink-0" />}
+                          </div>
+                          {/* Away */}
+                          <div 
+                            onClick={() => match.awayTeam && handleBracketMatchWinner('semiFinals', match.id, match.awayTeam)}
+                            className={`flex items-center justify-between p-1 rounded cursor-pointer transition select-none ${
+                              match.winner === match.awayTeam 
+                                ? 'bg-emerald-50 text-emerald-800 font-semibold border border-emerald-200' 
+                                : 'hover:bg-slate-50 text-slate-600'
+                            }`}
+                          >
+                            <span className="flex items-center gap-1 min-w-0 flex-1">
+                              <span className="text-[12px] shrink-0">{getCountryFlag(match.awayTeam || '')}</span>
+                              <span className="truncate font-semibold">{match.awayTeam || '8강 승자'}</span>
+                            </span>
+                            {match.winner === match.awayTeam && <Check className="w-2.5 h-2.5 text-emerald-600 shrink-0" />}
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+
+                    {/* 7. Right Quarter Finals (Matches 3 to 4) */}
+                    <div className="flex flex-col justify-around h-full gap-0.5">
+                      {data.bracket.quarterFinals.slice(2, 4).map(match => (
+                        <div key={match.id} className="bg-white border border-slate-200 rounded-lg p-1.5 shadow-3xs text-[10px] space-y-0.5 hover:border-emerald-400 transition relative">
+                          <span className="text-[7px] text-slate-400 font-mono absolute right-1 top-[1px]">#{match.matchNumber}</span>
+                          {/* Home */}
+                          <div 
+                            onClick={() => match.homeTeam && handleBracketMatchWinner('quarterFinals', match.id, match.homeTeam)}
+                            className={`flex items-center justify-between px-1.5 py-0.5 rounded cursor-pointer transition select-none ${
+                              match.winner === match.homeTeam 
+                                ? 'bg-emerald-50 text-emerald-800 font-bold border border-emerald-100/50' 
+                                : 'hover:bg-slate-50 text-slate-600'
+                            }`}
+                          >
+                            <span className="flex items-center gap-1 min-w-0 flex-1">
+                              <span className="text-xs shrink-0">{getCountryFlag(match.homeTeam || '')}</span>
+                              <span className="truncate font-medium">{match.homeTeam || '16강 승자'}</span>
+                            </span>
+                            {match.winner === match.homeTeam && <Check className="w-2.5 h-2.5 text-emerald-600 shrink-0" />}
+                          </div>
+                          {/* Away */}
+                          <div 
+                            onClick={() => match.awayTeam && handleBracketMatchWinner('quarterFinals', match.id, match.awayTeam)}
+                            className={`flex items-center justify-between px-1.5 py-0.5 rounded cursor-pointer transition select-none ${
+                              match.winner === match.awayTeam 
+                                ? 'bg-emerald-50 text-emerald-800 font-bold border border-emerald-100/50' 
+                                : 'hover:bg-slate-50 text-slate-600'
+                            }`}
+                          >
+                            <span className="flex items-center gap-1 min-w-0 flex-1">
+                              <span className="text-xs shrink-0">{getCountryFlag(match.awayTeam || '')}</span>
+                              <span className="truncate font-medium">{match.awayTeam || '16강 승자'}</span>
+                            </span>
+                            {match.winner === match.awayTeam && <Check className="w-2.5 h-2.5 text-emerald-600 shrink-0" />}
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+
+                    {/* 8. Right Round of 16 (Matches 5 to 8) */}
+                    <div className="flex flex-col justify-around h-full gap-0.5">
+                      {data.bracket.roundOf16.slice(4, 8).map(match => (
+                        <div key={match.id} className="bg-white border border-slate-200 rounded-lg p-1.5 shadow-3xs text-[10px] space-y-0.5 hover:border-emerald-400 transition relative">
+                          <span className="text-[7px] text-slate-400 font-mono absolute right-1 top-[1px]">#{match.matchNumber}</span>
+                          {/* Home */}
+                          <div 
+                            onClick={() => match.homeTeam && handleBracketMatchWinner('roundOf16', match.id, match.homeTeam)}
+                            className={`flex items-center justify-between px-1.5 py-0.5 rounded cursor-pointer transition select-none ${
+                              match.winner === match.homeTeam 
+                                ? 'bg-emerald-50 text-emerald-800 font-bold border border-emerald-100/50' 
+                                : 'hover:bg-slate-50 text-slate-600'
+                            }`}
+                          >
+                            <span className="flex items-center gap-1 min-w-0 flex-1">
+                              <span className="text-xs shrink-0">{getCountryFlag(match.homeTeam || '')}</span>
+                              <span className="truncate font-medium">{match.homeTeam || '32강 승자'}</span>
+                            </span>
+                            {match.winner === match.homeTeam && <Check className="w-2.5 h-2.5 text-emerald-600 shrink-0" />}
+                          </div>
+                          {/* Away */}
+                          <div 
+                            onClick={() => match.awayTeam && handleBracketMatchWinner('roundOf16', match.id, match.awayTeam)}
+                            className={`flex items-center justify-between px-1.5 py-0.5 rounded cursor-pointer transition select-none ${
+                              match.winner === match.awayTeam 
+                                ? 'bg-emerald-50 text-emerald-800 font-bold border border-emerald-100/50' 
+                                : 'hover:bg-slate-50 text-slate-600'
+                            }`}
+                          >
+                            <span className="flex items-center gap-1 min-w-0 flex-1">
+                              <span className="text-xs shrink-0">{getCountryFlag(match.awayTeam || '')}</span>
+                              <span className="truncate font-medium">{match.awayTeam || '32강 승자'}</span>
+                            </span>
+                            {match.winner === match.awayTeam && <Check className="w-2.5 h-2.5 text-emerald-600 shrink-0" />}
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+
+                    {/* 9. Right Round of 32 (Matches 9 to 16) */}
+                    <div className="flex flex-col justify-around h-full gap-0.5">
+                      {data.bracket.roundOf32.slice(8, 16).map(match => (
+                        <div key={match.id} className="bg-white border border-slate-200 rounded-lg p-1 shadow-3xs text-[10px] space-y-0.5 hover:border-emerald-400 transition relative">
+                          <span className="text-[7px] text-slate-400 font-mono absolute right-1 top-[1px]">#{match.matchNumber}</span>
+                          {/* Home */}
+                          <div 
+                            onClick={() => match.homeTeam && handleBracketMatchWinner('roundOf32', match.id, match.homeTeam)}
+                            className={`flex items-center justify-between px-1.5 py-0.5 rounded cursor-pointer transition select-none ${
+                              match.winner === match.homeTeam 
+                                ? 'bg-emerald-50 text-emerald-800 font-bold border border-emerald-100/50' 
+                                : 'hover:bg-slate-50 text-slate-600'
+                            }`}
+                          >
+                            <span className="flex items-center gap-1 min-w-0 flex-1">
+                              <span className="text-xs shrink-0">{getCountryFlag(match.homeTeam || '')}</span>
+                              <span className="truncate font-medium">{match.homeTeam || '미정'}</span>
+                            </span>
+                            {match.winner === match.homeTeam && <Check className="w-2.5 h-2.5 text-emerald-600 shrink-0" />}
+                          </div>
+                          {/* Away */}
+                          <div 
+                            onClick={() => match.awayTeam && handleBracketMatchWinner('roundOf32', match.id, match.awayTeam)}
+                            className={`flex items-center justify-between px-1.5 py-0.5 rounded cursor-pointer transition select-none ${
+                              match.winner === match.awayTeam 
+                                ? 'bg-emerald-50 text-emerald-800 font-bold border border-emerald-100/50' 
+                                : 'hover:bg-slate-50 text-slate-600'
+                            }`}
+                          >
+                            <span className="flex items-center gap-1 min-w-0 flex-1">
+                              <span className="text-xs shrink-0">{getCountryFlag(match.awayTeam || '')}</span>
+                              <span className="truncate font-medium">{match.awayTeam || '미정'}</span>
+                            </span>
+                            {match.winner === match.awayTeam && <Check className="w-2.5 h-2.5 text-emerald-600 shrink-0" />}
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+
+                  </div>
+                </div>
+              </div>
+            )}
           </div>
         )}
 
@@ -1759,7 +2103,7 @@ export default function App() {
                 실시간 데이터 통합망
               </span>
             </div>
-            <p>본 대시보드는 2026 FIFA World Cup 북중미 본선의 최신 정보와 토너먼트 결과를 실시간으로 중계합니다.</p>
+            <p>본 서비스는 2026 FIFA World Cup 북중미 본선의 최신 정보와 토너먼트 결과를 실시간으로 중계합니다.</p>
           </div>
           <div>
             <p className="text-slate-500 font-medium">© 2026 World Cup Bracket Live Hub. Powered by Official FIFA Match Feed APIs & Fallback Simulator.</p>
