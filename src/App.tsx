@@ -16,9 +16,7 @@ import {
   ChevronRight,
   Info,
   List,
-  GitFork,
-  Sun,
-  Moon
+  GitFork
 } from 'lucide-react';
 import { WorldCupData, GroupStanding, Match, BracketMatch, AIAnalysis } from './types';
 import { getCountryFlag, formatTeamNameWithFlag } from './utils/flags';
@@ -55,15 +53,7 @@ export function getThirdPlaceStandings(groups: GroupStanding[]): ThirdPlaceCandi
 }
 
 export default function App() {
-  const [theme, setTheme] = useState<'light' | 'dark'>(() => {
-    if (typeof window !== 'undefined') {
-      const saved = localStorage.getItem('theme');
-      if (saved === 'dark' || saved === 'light') {
-        return saved as 'light' | 'dark';
-      }
-    }
-    return 'light';
-  });
+  const theme = 'light';
 
   const [data, setData] = useState<WorldCupData | null>(null);
   const [loading, setLoading] = useState<boolean>(true);
@@ -79,15 +69,10 @@ export default function App() {
   const [bracketViewMode, setBracketViewMode] = useState<'list' | 'tree'>('list');
 
   useEffect(() => {
-    localStorage.setItem('theme', theme);
-    if (theme === 'dark') {
-      document.documentElement.classList.add('dark');
-      document.documentElement.style.colorScheme = 'dark';
-    } else {
-      document.documentElement.classList.remove('dark');
-      document.documentElement.style.colorScheme = 'light';
-    }
-  }, [theme]);
+    localStorage.setItem('theme', 'light');
+    document.documentElement.classList.remove('dark');
+    document.documentElement.style.colorScheme = 'light';
+  }, []);
   const [selectedBracketRound, setSelectedBracketRound] = useState<'roundOf32' | 'roundOf16' | 'quarterFinals' | 'semiFinals' | 'final'>('roundOf32');
 
   useEffect(() => {
@@ -287,16 +272,6 @@ export default function App() {
               >
                 <RefreshCw className={`w-5 h-5 ${refreshing ? 'animate-spin' : ''}`} />
                 <span>{refreshing ? '실시간 정보 확인 중...' : '실시간 정보 및 대진 갱신'}</span>
-              </button>
-
-              <button
-                onClick={() => setTheme(theme === 'light' ? 'dark' : 'light')}
-                className="flex items-center justify-center gap-2 px-5 py-3.5 bg-slate-100 hover:bg-slate-200 dark:bg-slate-800/90 dark:hover:bg-slate-700/95 text-slate-800 dark:text-slate-200 hover:text-slate-950 dark:hover:text-white font-bold rounded-xl border border-slate-200 dark:border-slate-700/80 shadow-sm active:translate-y-0.5 transition cursor-pointer text-sm"
-                title={theme === 'light' ? '다크 모드로 전환' : '라이트 모드로 전환'}
-                id="theme-toggle-btn"
-              >
-                {theme === 'light' ? <Moon className="w-5 h-5 text-amber-500" /> : <Sun className="w-5 h-5 text-amber-400" />}
-                <span>{theme === 'light' ? '다크 모드' : '라이트 모드'}</span>
               </button>
             </div>
           </div>
