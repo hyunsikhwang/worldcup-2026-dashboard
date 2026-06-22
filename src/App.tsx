@@ -82,8 +82,10 @@ export default function App() {
     localStorage.setItem('theme', theme);
     if (theme === 'dark') {
       document.documentElement.classList.add('dark');
+      document.documentElement.style.colorScheme = 'dark';
     } else {
       document.documentElement.classList.remove('dark');
+      document.documentElement.style.colorScheme = 'light';
     }
   }, [theme]);
   const [selectedBracketRound, setSelectedBracketRound] = useState<'roundOf32' | 'roundOf16' | 'quarterFinals' | 'semiFinals' | 'final'>('roundOf32');
@@ -405,7 +407,7 @@ export default function App() {
                     <div className={`px-4 py-3.5 flex items-center justify-between font-bold rounded-t-2xl ${
                       hasKorea 
                         ? 'bg-rose-50/55 border-b border-rose-100 dark:border-rose-900/40 text-rose-900 dark:text-rose-200 dark:bg-rose-950/20' 
-                        : 'bg-slate-100 text-slate-800 dark:bg-slate-800 dark:text-slate-105 dark:text-slate-100'
+                        : 'bg-slate-100 text-slate-800 dark:bg-slate-800 dark:text-slate-100'
                     }`}>
                       <div className="flex items-center gap-2">
                         <span className="text-lg">Group {group.groupLetter}</span>
@@ -556,7 +558,7 @@ export default function App() {
                                 <td className="py-3 px-1 text-center font-mono text-xs text-slate-500 font-medium whitespace-nowrap">
                                    {team.gd > 0 ? `+${team.gd}` : team.gd}
                                  </td>
-                                 <td className="py-3 px-2.5 text-center font-extrabold text-slate-900 bg-slate-50/20 whitespace-nowrap">
+                                 <td className="py-3 px-2.5 text-center font-extrabold text-slate-900 dark:text-slate-100 bg-slate-50/20 dark:bg-slate-800/10 whitespace-nowrap">
                                    {team.points}
                                  </td>
                                </tr>
@@ -798,18 +800,18 @@ export default function App() {
                         <div className="p-5 flex items-center justify-between">
                           <div className="flex-1 flex flex-col items-end pr-4 sm:pr-8">
                             <span className="text-2xl sm:text-3xl mb-1">{getCountryFlag(match.homeTeam)}</span>
-                            <span className="font-extrabold text-slate-800 text-sm sm:text-base text-right">{match.homeTeam}</span>
+                            <span className="font-extrabold text-slate-800 dark:text-slate-200 text-sm sm:text-base text-right">{match.homeTeam}</span>
                           </div>
 
-                          <div className="flex items-center gap-3 bg-slate-100 px-4 py-2 rounded-xl border border-slate-200">
-                            <span className="text-2xl sm:text-3xl font-black text-slate-900">{match.homeScore ?? 0}</span>
+                          <div className="flex items-center gap-3 bg-slate-100 dark:bg-slate-800 px-4 py-2 rounded-xl border border-slate-200 dark:border-slate-700">
+                            <span className="text-2xl sm:text-3xl font-black text-slate-900 dark:text-white">{match.homeScore ?? 0}</span>
                             <span className="text-slate-400 font-bold text-xs">VS</span>
-                            <span className="text-2xl sm:text-3xl font-black text-slate-900">{match.awayScore ?? 0}</span>
+                            <span className="text-2xl sm:text-3xl font-black text-slate-900 dark:text-white">{match.awayScore ?? 0}</span>
                           </div>
 
                           <div className="flex-1 flex flex-col items-start pl-4 sm:pl-8">
                             <span className="text-2xl sm:text-3xl mb-1">{getCountryFlag(match.awayTeam)}</span>
-                            <span className="font-extrabold text-slate-800 text-sm sm:text-base text-left">{match.awayTeam}</span>
+                            <span className="font-extrabold text-slate-800 dark:text-slate-200 text-sm sm:text-base text-left">{match.awayTeam}</span>
                           </div>
                         </div>
 
@@ -977,7 +979,7 @@ export default function App() {
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                     {data.matches.filter(m => m.status === 'Finished').map(match => (
                       <div key={match.id} className="bg-white rounded-xl border border-slate-100 p-4 shadow-3xs">
-                        <div className="flex items-center justify-between text-xs text-slate-400 border-b border-slate-100 pb-2 mb-2">
+                        <div className="flex items-center justify-between text-xs text-slate-400 border-b border-slate-100 dark:border-slate-800 pb-2 mb-2">
                           <span className="font-semibold">{match.stage} · {match.group ? `${match.group}조` : ''}</span>
                           <span className="text-slate-400">{match.date} 종료</span>
                         </div>
@@ -986,19 +988,19 @@ export default function App() {
                           <div className="space-y-2">
                             <div className="flex items-center gap-1.5">
                               <span>{getCountryFlag(match.homeTeam)}</span>
-                              <span className={`text-sm ${match.homeScore! > match.awayScore! ? 'font-black text-slate-900' : 'text-slate-500'}`}>
+                              <span className={`text-sm ${match.homeScore! > match.awayScore! ? 'font-black text-slate-900 dark:text-slate-100' : 'text-slate-550 dark:text-slate-400'}`}>
                                 {match.homeTeam}
                               </span>
                             </div>
                             <div className="flex items-center gap-1.5">
                               <span>{getCountryFlag(match.awayTeam)}</span>
-                              <span className={`text-sm ${match.awayScore! > match.homeScore! ? 'font-black text-slate-900' : 'text-slate-500'}`}>
+                              <span className={`text-sm ${match.awayScore! > match.homeScore! ? 'font-black text-slate-900 dark:text-slate-100' : 'text-slate-550 dark:text-slate-400'}`}>
                                 {match.awayTeam}
                               </span>
                             </div>
                           </div>
 
-                          <div className="bg-slate-100 px-2 py-1.5 rounded-lg text-right font-black font-mono text-sm border border-slate-200">
+                          <div className="bg-slate-100 dark:bg-slate-800 px-2 py-1.5 rounded-lg text-right font-black font-mono text-sm border border-slate-200 dark:border-slate-700 text-slate-900 dark:text-slate-100">
                             <div>{match.homeScore}</div>
                             <div>{match.awayScore}</div>
                           </div>
@@ -1080,49 +1082,54 @@ export default function App() {
                         aTeam.played = aTeam.won + aTeam.drawn + aTeam.lost;
                         aTeam.gd = aTeam.gf - aTeam.ga;
                         aTeam.points = aTeam.won * 3 + aTeam.drawn;
-
-                        grp.teams.sort((a,b) => b.points - a.points || b.gd - a.gd || b.gf - a.gf || a.name.localeCompare(b.name, 'ko-KR'));
-                        grp.teams.forEach((t, idx) => t.rank = idx + 1);
                       }
+
+                      // Sort group teams based on rules (points, gd, gf, etc.)
+                      grp.teams.sort((a, b) => b.points - a.points || b.gd - a.gd || b.gf - a.gf);
                     }
 
                     setData(updated);
+                    setApiNotification({
+                      message: '새 경기의 득점 통계 및 순위정보가 시뮬레이션용으로 실시간 재조정 되었습니다.',
+                      type: 'success'
+                    });
                     form.reset();
-                  }} className="space-y-4">
-                    <div>
-                      <label className="block text-xs font-bold text-slate-600 mb-1">조 선택</label>
-                      <select name="groupSelect" className="w-full bg-slate-50 border border-slate-200 rounded-lg p-2 text-xs outline-none focus:ring-1 focus:ring-emerald-500">
-                        {groupsList.filter(g => g !== 'ALL').map(g => (
+                  }}>
+                    {/* Select Group */}
+                    <div className="mb-3.5">
+                      <label className="block text-xs font-bold text-slate-600 dark:text-slate-400 mb-1">본선 조 선택 (A~L)</label>
+                      <select name="groupSelect" defaultValue="A" className="w-full bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-750 rounded-lg p-2 text-xs outline-none focus:ring-1 focus:ring-emerald-500 text-slate-900 dark:text-slate-100">
+                        {['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J', 'K', 'L'].map(g => (
                           <option key={g} value={g}>{g}조</option>
                         ))}
                       </select>
                     </div>
 
-                    <div className="grid grid-cols-2 gap-3">
+                    <div className="grid grid-cols-2 gap-3 mb-3.5">
                       <div>
-                        <label className="block text-xs font-bold text-slate-600 mb-1">홈팀 국가</label>
-                        <input name="homeTeam" type="text" placeholder="예: 대한민국" required className="w-full bg-slate-50 border border-slate-200 rounded-lg p-2 text-xs outline-none focus:ring-1 focus:ring-emerald-500" />
+                        <label className="block text-xs font-bold text-slate-600 dark:text-slate-400 mb-1">홈팀 국가</label>
+                        <input name="homeTeam" type="text" placeholder="예: 대한민국" required className="w-full bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg p-2 text-xs outline-none focus:ring-1 focus:ring-emerald-500 text-slate-900 dark:text-slate-100" />
                       </div>
                       <div>
-                        <label className="block text-xs font-bold text-slate-600 mb-1">어웨이팀 국가</label>
-                        <input name="awayTeam" type="text" placeholder="예: 일본" required className="w-full bg-slate-50 border border-slate-200 rounded-lg p-2 text-xs outline-none focus:ring-1 focus:ring-emerald-500" />
+                        <label className="block text-xs font-bold text-slate-600 dark:text-slate-400 mb-1">어웨이팀 국가</label>
+                        <input name="awayTeam" type="text" placeholder="예: 일본" required className="w-full bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg p-2 text-xs outline-none focus:ring-1 focus:ring-emerald-500 text-slate-900 dark:text-slate-100" />
                       </div>
                     </div>
 
-                    <div className="grid grid-cols-2 gap-3">
+                    <div className="grid grid-cols-2 gap-3 mb-4.5">
                       <div>
-                        <label className="block text-xs font-bold text-slate-600 mb-1">홈 득점</label>
-                        <input name="homeScore" type="number" min="0" defaultValue="0" className="w-full bg-slate-50 border border-slate-200 rounded-lg p-2 text-xs outline-none focus:ring-1 focus:ring-emerald-500" />
+                        <label className="block text-xs font-bold text-slate-600 dark:text-slate-400 mb-1">홈 득점</label>
+                        <input name="homeScore" type="number" min="0" defaultValue="0" className="w-full bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg p-2 text-xs outline-none focus:ring-1 focus:ring-emerald-500 text-slate-900 dark:text-slate-100" />
                       </div>
                       <div>
-                        <label className="block text-xs font-bold text-slate-600 mb-1">어웨이 득점</label>
-                        <input name="awayScore" type="number" min="0" defaultValue="0" className="w-full bg-slate-50 border border-slate-200 rounded-lg p-2 text-xs outline-none focus:ring-1 focus:ring-emerald-500" />
+                        <label className="block text-xs font-bold text-slate-600 dark:text-slate-400 mb-1">어웨이 득점</label>
+                        <input name="awayScore" type="number" min="0" defaultValue="0" className="w-full bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg p-2 text-xs outline-none focus:ring-1 focus:ring-emerald-500 text-slate-900 dark:text-slate-100" />
                       </div>
                     </div>
 
                     <button 
                       type="submit"
-                      className="w-full py-2.5 bg-slate-900 hover:bg-slate-800 text-white font-bold rounded-lg text-xs tracking-wide cursor-pointer transition"
+                      className="w-full py-2.5 bg-slate-900 hover:bg-slate-850 dark:bg-emerald-600 dark:hover:bg-emerald-555 text-white font-bold rounded-lg text-xs tracking-wide cursor-pointer transition"
                     >
                       경기 완료 반영하기
                     </button>
@@ -1132,6 +1139,8 @@ export default function App() {
             </div>
           </div>
         )}
+
+
 
         {/* BRACKET TAB - FULL DYNAMIC VISUALIZATION */}
         {activeTab === 'bracket' && (
@@ -1144,7 +1153,7 @@ export default function App() {
                   <span>2026 북중미 월드컵 토너먼트 본선 실시간 대진표 (32강~결승)</span>
                 </h3>
                 <p className="text-slate-500 text-[11px] mt-0.5">
-                  각 대진 카드에서 <strong className="text-emerald-700">이길 팀을 원클릭으로 선택</strong>하면 다음 라운드 진출국 자리에 자동으로 국기와 팀명이 전파 및 동기화됩니다.
+
                 </p>
               </div>
 
@@ -1355,16 +1364,16 @@ export default function App() {
             </div>
 
             {/* 뷰 모드 탭 컨트롤 (스마트 목록 및 트리 맵) */}
-            <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 bg-white p-3.5 rounded-2xl border border-slate-200">
+            <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 bg-white dark:bg-slate-900 p-3.5 rounded-2xl border border-slate-200 dark:border-slate-800 transition-colors">
               <div className="flex flex-wrap items-center gap-3">
                 <span className="text-xs font-black text-slate-500 uppercase tracking-wider">보기 모드 선택:</span>
-                <div className="inline-flex rounded-xl bg-slate-100 p-1 border border-slate-200" id="bracket-view-tabs">
+                <div className="inline-flex rounded-xl bg-slate-100 dark:bg-slate-800 p-1 border border-slate-200 dark:border-slate-700" id="bracket-view-tabs">
                   <button
                     onClick={() => setBracketViewMode('list')}
                     className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer ${
                       bracketViewMode === 'list'
-                        ? 'bg-white text-emerald-800 shadow-xs ring-1 ring-black/5'
-                        : 'text-slate-600 hover:text-slate-900'
+                        ? 'bg-white dark:bg-slate-700 text-emerald-800 dark:text-emerald-400 shadow-xs ring-1 ring-black/5'
+                        : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200'
                     }`}
                   >
                     <List className="w-3.5 h-3.5" />
@@ -1375,8 +1384,8 @@ export default function App() {
                     onClick={() => setBracketViewMode('tree')}
                     className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer ${
                       bracketViewMode === 'tree'
-                        ? 'bg-white text-emerald-800 shadow-xs ring-1 ring-black/5'
-                        : 'text-slate-600 hover:text-slate-900'
+                        ? 'bg-white dark:bg-slate-700 text-emerald-800 dark:text-emerald-400 shadow-xs ring-1 ring-black/5'
+                        : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200'
                     }`}
                   >
                     <GitFork className="w-3.5 h-3.5" />
@@ -1387,7 +1396,7 @@ export default function App() {
 
               {bracketViewMode === 'list' ? (
                 <div className="text-slate-500 text-[11px] font-medium">
-                  💡 모바일/태블릿 맞춤 뷰: 경기 카드에서 <strong className="text-emerald-700">진출국을 선택</strong>하면 다음 라운드 대진으로 자동 전송됩니다.
+                  💡 모바일/태블릿 맞춤 뷰: 경기 카드에서 <strong className="text-emerald-700 dark:text-emerald-400">진출국을 선택</strong>하면 다음 라운드 대진으로 자동 전송됩니다.
                 </div>
               ) : (
                 <div className="text-slate-500 text-[11px] font-medium flex items-center gap-1.5">
@@ -1401,7 +1410,7 @@ export default function App() {
             {bracketViewMode === 'list' && (
               <div className="space-y-4 animate-fade-in" id="bracket-list-view">
                 {/* 라운드 선택 슬라이더 */}
-                <div className="flex bg-slate-100 rounded-xl p-1 border border-slate-200/50 justify-between items-center gap-1 shadow-3xs overflow-x-auto scrollbar-none">
+                <div className="flex bg-slate-100 dark:bg-slate-800/80 rounded-xl p-1 border border-slate-200/50 dark:border-slate-700/50 justify-between items-center gap-1 shadow-3xs overflow-x-auto scrollbar-none">
                   {[
                     { key: 'roundOf32', label: '32강 대진' },
                     { key: 'roundOf16', label: '16강 대진' },
@@ -1414,8 +1423,8 @@ export default function App() {
                       onClick={() => setSelectedBracketRound(round.key as any)}
                       className={`flex-1 min-w-[70px] text-[11px] sm:text-xs font-black text-center py-2.5 px-1.5 whitespace-nowrap rounded-lg transition-all cursor-pointer ${
                         selectedBracketRound === round.key
-                          ? 'bg-slate-900 text-white shadow-xs'
-                          : 'text-slate-600 hover:bg-slate-200 hover:text-slate-900'
+                          ? 'bg-slate-900 dark:bg-emerald-600 text-white shadow-xs'
+                          : 'text-slate-600 dark:text-slate-400 hover:bg-slate-200 dark:hover:bg-slate-700 hover:text-slate-900 dark:hover:text-slate-100'
                       }`}
                     >
                       {round.label}

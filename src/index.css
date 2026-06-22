@@ -6,6 +6,17 @@
   --variant-dark: (&:where(.dark, .dark *));
 }
 
+/* Premium Light Theme Base Overrides */
+html {
+  background-color: #f8fafc !important;
+  color: #0f172a !important;
+}
+
+body {
+  background-color: #f8fafc !important;
+  color: #0f172a !important;
+}
+
 /* Premium Dark Theme Overrides */
 html.dark {
   background-color: #090d16 !important;
@@ -131,6 +142,16 @@ html.dark .border-amber-400 {
 }
 
 /* Text input controls & Dropdown Selects */
+input[type="text"], input[type="number"], select, option {
+  background-color: #ffffff !important;
+  color: #0f172a !important;
+  border: 1px solid #cbd5e1 !important;
+}
+
+input[type="text"]::placeholder {
+  color: #94a3b8 !important;
+}
+
 html.dark input[type="text"] {
   background-color: #0f172a !important;
   color: #f8fafc !important;
@@ -170,4 +191,21 @@ html.dark .bg-slate-50\/50 {
 
 html.dark .bg-slate-800\/40 {
   background-color: rgba(15, 23, 42, 0.6) !important;
+}
+
+/* Correct high contrast variables for dark mode elements */
+html.dark .bg-emerald-50 {
+  background-color: rgba(16, 185, 129, 0.15) !important;
+}
+
+html.dark .text-emerald-800 {
+  color: #34d399 !important;
+}
+
+html.dark .border-emerald-200 {
+  border-color: rgba(16, 185, 129, 0.4) !important;
+}
+
+html.dark .text-slate-900 {
+  color: #f8fafc !important;
 }
