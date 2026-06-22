@@ -10,6 +10,7 @@
 html {
   background-color: #f8fafc !important;
   color: #0f172a !important;
+  color-scheme: light dark !important;
 }
 
 body {

@@ -291,7 +291,7 @@ export default function App() {
 
               <button
                 onClick={() => setTheme(theme === 'light' ? 'dark' : 'light')}
-                className="flex items-center justify-center gap-2 px-5 py-3.5 bg-slate-100 hover:bg-slate-200 dark:bg-slate-800/90 dark:hover:bg-slate-700/95 text-slate-800 dark:text-slate-200 hover:text-slate-955 dark:hover:text-white font-bold rounded-xl border border-slate-200 dark:border-slate-700/80 shadow-sm active:translate-y-0.5 transition cursor-pointer text-sm"
+                className="flex items-center justify-center gap-2 px-5 py-3.5 bg-slate-100 hover:bg-slate-200 dark:bg-slate-800/90 dark:hover:bg-slate-700/95 text-slate-800 dark:text-slate-200 hover:text-slate-950 dark:hover:text-white font-bold rounded-xl border border-slate-200 dark:border-slate-700/80 shadow-sm active:translate-y-0.5 transition cursor-pointer text-sm"
                 title={theme === 'light' ? '다크 모드로 전환' : '라이트 모드로 전환'}
                 id="theme-toggle-btn"
               >
@@ -423,7 +423,7 @@ export default function App() {
                     <div className="overflow-visible">
                       <table className="w-full text-left text-xs min-w-[320px]">
                         <thead>
-                          <tr className="bg-slate-50 dark:bg-slate-850 text-slate-400 dark:text-slate-350 font-semibold border-b border-slate-100 dark:border-slate-800">
+                          <tr className="bg-slate-50 dark:bg-slate-800 text-slate-500 dark:text-slate-300 font-semibold border-b border-slate-100 dark:border-slate-800">
                             <th className="py-2.5 px-3 text-center w-8">순위</th>
                             <th className="py-2.5 px-1">국가명</th>
                             <th className="py-2.5 px-1 text-center w-8">경기</th>
@@ -444,7 +444,7 @@ export default function App() {
                               <tr 
                                 key={team.name}
                                 className={`border-b border-slate-100/60 dark:border-slate-800/40 hover:bg-slate-50/70 dark:hover:bg-slate-800/20 transition-colors ${
-                                  isKorea ? 'bg-rose-50/30 dark:bg-rose-955/15' : ''
+                                  isKorea ? 'bg-rose-50/30 dark:bg-rose-950/15' : ''
                                 }`}
                               >
                                 <td className="py-3 px-3 text-center">
@@ -517,7 +517,7 @@ export default function App() {
                                               badgeColor = 'bg-rose-500/10 text-rose-400 border border-rose-500/20';
                                             } else {
                                               resultText = '무';
-                                              badgeColor = 'bg-slate-850 text-slate-300 border border-slate-700/20';
+                                              badgeColor = 'bg-slate-800 text-slate-300 border border-slate-700/20';
                                             }
                                           } else if (isLive) {
                                             const teamScore = isHome ? m.homeScore : m.awayScore;
@@ -988,13 +988,13 @@ export default function App() {
                           <div className="space-y-2">
                             <div className="flex items-center gap-1.5">
                               <span>{getCountryFlag(match.homeTeam)}</span>
-                              <span className={`text-sm ${match.homeScore! > match.awayScore! ? 'font-black text-slate-900 dark:text-slate-100' : 'text-slate-550 dark:text-slate-400'}`}>
+                              <span className={`text-sm ${match.homeScore! > match.awayScore! ? 'font-black text-slate-900 dark:text-slate-100' : 'text-slate-500 dark:text-slate-400'}`}>
                                 {match.homeTeam}
                               </span>
                             </div>
                             <div className="flex items-center gap-1.5">
                               <span>{getCountryFlag(match.awayTeam)}</span>
-                              <span className={`text-sm ${match.awayScore! > match.homeScore! ? 'font-black text-slate-900 dark:text-slate-100' : 'text-slate-550 dark:text-slate-400'}`}>
+                              <span className={`text-sm ${match.awayScore! > match.homeScore! ? 'font-black text-slate-900 dark:text-slate-100' : 'text-slate-500 dark:text-slate-400'}`}>
                                 {match.awayTeam}
                               </span>
                             </div>
@@ -1098,7 +1098,7 @@ export default function App() {
                     {/* Select Group */}
                     <div className="mb-3.5">
                       <label className="block text-xs font-bold text-slate-600 dark:text-slate-400 mb-1">본선 조 선택 (A~L)</label>
-                      <select name="groupSelect" defaultValue="A" className="w-full bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-750 rounded-lg p-2 text-xs outline-none focus:ring-1 focus:ring-emerald-500 text-slate-900 dark:text-slate-100">
+                      <select name="groupSelect" defaultValue="A" className="w-full bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg p-2 text-xs outline-none focus:ring-1 focus:ring-emerald-500 text-slate-900 dark:text-slate-100">
                         {['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J', 'K', 'L'].map(g => (
                           <option key={g} value={g}>{g}조</option>
                         ))}
@@ -1129,7 +1129,7 @@ export default function App() {
 
                     <button 
                       type="submit"
-                      className="w-full py-2.5 bg-slate-900 hover:bg-slate-850 dark:bg-emerald-600 dark:hover:bg-emerald-555 text-white font-bold rounded-lg text-xs tracking-wide cursor-pointer transition"
+                      className="w-full py-2.5 bg-slate-900 hover:bg-slate-800 dark:bg-emerald-600 dark:hover:bg-emerald-500 text-white font-bold rounded-lg text-xs tracking-wide cursor-pointer transition"
                     >
                       경기 완료 반영하기
                     </button>
@@ -1689,7 +1689,7 @@ export default function App() {
                       </div>
 
                       {match.winner && (
-                        <div className="bg-amber-550 text-white p-3 rounded-xl text-center text-xs font-black tracking-widest shadow-md animate-pulse flex items-center justify-center gap-2">
+                        <div className="bg-amber-500 text-white p-3 rounded-xl text-center text-xs font-black tracking-widest shadow-md animate-pulse flex items-center justify-center gap-2">
                           🏆 {getCountryFlag(match.winner)} {match.winner} 우승 달성! 🏆
                         </div>
                       )}
@@ -1880,7 +1880,7 @@ export default function App() {
                       {data.bracket.final.map(match => (
                         <div key={match.id} className="w-full bg-gradient-to-br from-amber-500/10 to-orange-500/10 border-2 border-amber-300 rounded-xl p-2.5 shadow-sm space-y-2 text-[10px] hover:border-amber-400 transition relative animate-fade-in">
                           <div className="text-[8px] text-amber-800 font-black tracking-wider uppercase text-center flex items-center justify-center gap-0.5">
-                            <Trophy className="w-3 h-3 text-amber-550" />
+                            <Trophy className="w-3 h-3 text-amber-500" />
                             <span>Grand Final</span>
                           </div>
 
