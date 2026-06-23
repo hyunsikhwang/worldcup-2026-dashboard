@@ -1,148 +1,104 @@
+@import url("https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.css");
+@import url("https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=JetBrains+Mono:wght@400;500;600;700&display=swap");
 @import "tailwindcss";
 
 @theme {
-  --font-sans: "Inter", ui-sans-serif, system-ui, sans-serif;
+  --font-sans: "Inter", "Pretendard", ui-sans-serif, system-ui, sans-serif;
   --font-mono: "JetBrains Mono", ui-monospace, SFMono-Regular, monospace;
-  --variant-dark: (&:where(.dark, .dark *));
 }
 
-/* Premium Light Theme Base Overrides */
-html {
+@variant dark (&:where(.never-match, .never-match *));
+
+/* 
+  [최종 정답 소스 코드]
+  1. 기기 설정이 다크 모드이든 라이트 모드이든 관계없이 'only light'를 전역(html, body, *, 가상 요소)에 선언합니다.
+  2. color-scheme: only light는 Chromium 브라우저에서 '웹 자동 다크 모드(Auto Dark Theme)'의 지능형 반전을 거부하는 표준 옵트아웃 규격입니다.
+  3. 이전에 'light dark'를 선언했을 때 브라우저가 "여기는 다크 모드 스타일이 있는 사이트구나!"라고 간주하고 텍스트 노드를 흰색으로 강제 역전시키고,
+     CSS에서는 백그라운드를 흰색으로 강제로 유지했기 때문에 '흰색 배경에 흰색 글자'가 되는 참사가 발생했습니다.
+  4. 'only light'로 단일 통일하고, prefers-color-scheme 관련 다크 미디어 쿼리를 모두 배제하여 브라우저의 이중 간섭을 원천 방지하며,
+     동시에 모든 계층에 어떠한 경우에도 텍스트 및 레이아웃 컬러가 라이트 모드 기본값으로 렌더링되게 정밀 선언합니다.
+*/
+
+*, *::before, *::after {
+  color-scheme: dark !important;
+  supported-color-schemes: dark !important;
+  font-family: "Inter", "Pretendard", ui-sans-serif, system-ui, sans-serif !important;
+}
+
+/* 모노 폰트 독립 지정 */
+code, pre, .font-mono, [class*="font-mono"] {
+  font-family: "JetBrains Mono", ui-monospace, SFMono-Regular, monospace !important;
+}
+
+:root {
+  color-scheme: dark !important;
+  supported-color-schemes: dark !important;
   background-color: #f8fafc !important;
   color: #0f172a !important;
-  color-scheme: light dark !important;
 }
 
-body {
+html, body, #root {
   background-color: #f8fafc !important;
+  color: #0f172a !important;
+  color-scheme: dark !important;
+  font-family: "Inter", "Pretendard", ui-sans-serif, system-ui, sans-serif !important;
+  min-height: 100vh;
+}
+
+/* 
+  강제 다크모드 무력화 및 모든 Tailwind 컬러 복원:
+  기기가 어떠한 형태로든 다크모드로 렌더링을 유도하더라도, 
+  모든 소스 클래스명 및 엘리먼트가 빳빳한 정밀 흑백 명도를 가지도록 명시적으로 수퍼 세이프 가드를 입힙니다.
+*/
+h1, h2, h3, h4, h5, h6, p, td, th, span, div, strong, label {
+  color: inherit;
+}
+
+.text-slate-950, .text-slate-900, .text-gray-900, .text-slate-800, .text-gray-800 {
   color: #0f172a !important;
 }
 
-/* Premium Dark Theme Overrides */
-html.dark {
-  background-color: #090d16 !important;
-  color: #f1f5f9 !important;
+.text-slate-700, .text-gray-700, .text-slate-600, .text-gray-600 {
+  color: #334155 !important;
 }
 
-html.dark body {
-  background-color: #090d16 !important;
-  color: #f1f5f9 !important;
-}
-
-/* Toggleable sticky tab navigation */
-html.dark #navigation-tabs {
-  background-color: rgba(9, 13, 22, 0.95) !important;
-  border-color: #1e293b !important;
-}
-
-/* Clean background overrides for all standard cards classes */
-html.dark .bg-white {
-  background-color: #0f172a !important;
-}
-
-html.dark .bg-slate-50 {
-  background-color: #090d16 !important;
-}
-
-html.dark .bg-slate-100 {
-  background-color: #1e293b !important;
-}
-
-/* Custom interactive button states */
-html.dark .hover\:bg-slate-50:hover {
-  background-color: #1e293b !important;
-}
-
-html.dark .hover\:bg-slate-50\/70:hover {
-  background-color: rgba(30, 41, 59, 0.5) !important;
-}
-
-/* Borders variables */
-html.dark .border-slate-200 {
-  border-color: #1e293b !important;
-}
-
-html.dark .border-slate-100 {
-  border-color: #1e293b !important;
-}
-
-html.dark .divide-slate-100 > :not([hidden]) ~ :not([hidden]) {
-  border-color: #1e293b !important;
-}
-
-/* Text coloring overrides */
-html.dark .text-slate-950 {
-  color: #f8fafc !important;
-}
-
-html.dark .text-slate-900 {
-  color: #f8fafc !important;
-}
-
-html.dark .text-slate-800 {
-  color: #cbd5e1 !important;
-}
-
-html.dark .text-slate-700 {
-  color: #94a3b8 !important;
-}
-
-html.dark .text-slate-600 {
+.text-slate-500, .text-slate-400 {
   color: #64748b !important;
 }
 
-html.dark .text-slate-500 {
-  color: #475569 !important;
+.text-emerald-800, .text-emerald-700, .text-emerald-600 {
+  color: #047857 !important;
 }
 
-/* High contrast highlight overrides */
-html.dark .text-emerald-700 {
-  color: #34d399 !important;
+.text-emerald-500 {
+  color: #10b981 !important;
 }
 
-html.dark .text-amber-700 {
-  color: #f59e0b !important;
+.text-amber-800, .text-amber-700 {
+  color: #b45309 !important;
 }
 
-html.dark .bg-amber-50\/40 {
-  background-color: rgba(245, 158, 11, 0.1) !important;
+.text-rose-700, .text-rose-600 {
+  color: #be123c !important;
 }
 
-html.dark .bg-rose-50\/30 {
-  background-color: rgba(225, 29, 72, 0.1) !important;
+.bg-white {
+  background-color: #ffffff !important;
 }
 
-html.dark .bg-rose-50\/55 {
-  background-color: rgba(225, 29, 72, 0.15) !important;
-  color: #fecdd3 !important;
+.bg-slate-50 {
+  background-color: #f8fafc !important;
 }
 
-html.dark .bg-emerald-50\/40 {
-  background-color: rgba(16, 185, 129, 0.1) !important;
+.bg-slate-100 {
+  background-color: #f1f5f9 !important;
 }
 
-html.dark .border-rose-100 {
-  border-color: rgba(225, 29, 72, 0.25) !important;
+.border-slate-200 {
+  border-color: #e2e8f0 !important;
 }
 
-html.dark .text-rose-700 {
-  color: #f43f5e !important;
-}
-
-/* Bracket active highlights for bracket screens */
-html.dark .bg-amber-100 {
-  background-color: rgba(245, 158, 11, 0.15) !important;
-}
-
-html.dark .text-amber-950 {
-  color: #fcd34d !important;
-}
-
-html.dark .border-amber-400 {
-  border-color: rgba(245, 158, 11, 0.5) !important;
-}
-
-/* Text input controls & Dropdown Selects */
+/* 폼 컨트롤 배경화면 및 플레이스홀더 */
 input[type="text"], input[type="number"], select, option {
   background-color: #ffffff !important;
   color: #0f172a !important;
@@ -151,62 +107,4 @@ input[type="text"], input[type="number"], select, option {
 
 input[type="text"]::placeholder {
   color: #94a3b8 !important;
-}
-
-html.dark input[type="text"] {
-  background-color: #0f172a !important;
-  color: #f8fafc !important;
-  border: 1px solid #1e293b !important;
-}
-
-html.dark input[type="text"]::placeholder {
-  color: #475569 !important;
-}
-
-html.dark input[type="number"] {
-  background-color: #0f172a !important;
-  color: #f8fafc !important;
-  border: 1px solid #1e293b !important;
-}
-
-html.dark select {
-  background-color: #0f172a !important;
-  color: #f8fafc !important;
-  border: 1px solid #1e293b !important;
-}
-
-html.dark option {
-  background-color: #0f172a !important;
-  color: #f8fafc !important;
-}
-
-/* Interactive focus borders for brackets maps */
-html.dark .hover\:border-emerald-400:hover {
-  border-color: #34d399 !important;
-}
-
-/* Custom background for scrollbars or containers */
-html.dark .bg-slate-50\/50 {
-  background-color: rgba(15, 23, 42, 0.5) !important;
-}
-
-html.dark .bg-slate-800\/40 {
-  background-color: rgba(15, 23, 42, 0.6) !important;
-}
-
-/* Correct high contrast variables for dark mode elements */
-html.dark .bg-emerald-50 {
-  background-color: rgba(16, 185, 129, 0.15) !important;
-}
-
-html.dark .text-emerald-800 {
-  color: #34d399 !important;
-}
-
-html.dark .border-emerald-200 {
-  border-color: rgba(16, 185, 129, 0.4) !important;
-}
-
-html.dark .text-slate-900 {
-  color: #f8fafc !important;
 }

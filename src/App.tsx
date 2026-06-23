@@ -52,6 +52,21 @@ export function getThirdPlaceStandings(groups: GroupStanding[]): ThirdPlaceCandi
   return candidates;
 }
 
+function isAllPlayedZero(worldCupData: WorldCupData | null): boolean {
+  if (!worldCupData || !worldCupData.groups || worldCupData.groups.length === 0) {
+    return false;
+  }
+  let totalTeams = 0;
+  let totalPlayed = 0;
+  for (const group of worldCupData.groups) {
+    for (const team of group.teams) {
+      totalTeams++;
+      totalPlayed += team.played;
+    }
+  }
+  return totalTeams > 0 && totalPlayed === 0;
+}
+
 export default function App() {
   const theme = 'light';
 
@@ -64,6 +79,7 @@ export default function App() {
   const [customHomeScore, setCustomHomeScore] = useState<Record<string, number>>({});
   const [customAwayScore, setCustomAwayScore] = useState<Record<string, number>>({});
   const [apiNotification, setApiNotification] = useState<{message: string, type: 'info' | 'success' | 'amber'} | null>(null);
+  const [autoRetryCount, setAutoRetryCount] = useState<number>(0);
 
   // Bracket UX states for responsive design
   const [bracketViewMode, setBracketViewMode] = useState<'list' | 'tree'>('list');
@@ -71,7 +87,7 @@ export default function App() {
   useEffect(() => {
     localStorage.setItem('theme', 'light');
     document.documentElement.classList.remove('dark');
-    document.documentElement.style.colorScheme = 'light';
+    document.documentElement.style.colorScheme = 'dark';
   }, []);
   const [selectedBracketRound, setSelectedBracketRound] = useState<'roundOf32' | 'roundOf16' | 'quarterFinals' | 'semiFinals' | 'final'>('roundOf32');
 
@@ -138,6 +154,28 @@ export default function App() {
       setRefreshing(false);
     }
   };
+
+  // Automatically detect errors when all countries' records are 0 and attempt reloading
+  useEffect(() => {
+    if (data && isAllPlayedZero(data)) {
+      if (autoRetryCount < 3) {
+        setApiNotification({
+          message: `모든 국가의 전적이 0으로 표시되는 상태를 감지했습니다. 최신 월드컵 데이터 복구를 위해 자동 갱신을 시도합니다 (시도 ${autoRetryCount + 1}/3)...`,
+          type: 'amber'
+        });
+        const timer = setTimeout(() => {
+          setAutoRetryCount(prev => prev + 1);
+          handleRefresh();
+        }, 1500);
+        return () => clearTimeout(timer);
+      } else {
+        setApiNotification({
+          message: '월드컵 데이터의 전체 전적이 0으로 감지되어 자동 복구를 3회 시도했으나 복구되지 않았습니다. 실시간 연동을 갱신하려면 우측 상단의 "실시간 데이터 동기화" 버튼을 클릭해 주세요.',
+          type: 'amber'
+        });
+      }
+    }
+  }, [data, autoRetryCount]);
 
   if (loading || !data) {
     return (
