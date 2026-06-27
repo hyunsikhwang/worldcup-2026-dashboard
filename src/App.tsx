@@ -80,9 +80,21 @@ export default function App() {
   const [customAwayScore, setCustomAwayScore] = useState<Record<string, number>>({});
   const [apiNotification, setApiNotification] = useState<{message: string, type: 'info' | 'success' | 'amber'} | null>(null);
   const [autoRetryCount, setAutoRetryCount] = useState<number>(0);
+  const [activeTooltipTeam, setActiveTooltipTeam] = useState<string | null>(null);
 
   // Bracket UX states for responsive design
   const [bracketViewMode, setBracketViewMode] = useState<'list' | 'tree'>('list');
+
+  // Dismiss tooltip when clicking anywhere on the screen
+  useEffect(() => {
+    const handleGlobalClick = () => {
+      setActiveTooltipTeam(null);
+    };
+    window.addEventListener('click', handleGlobalClick);
+    return () => {
+      window.removeEventListener('click', handleGlobalClick);
+    };
+  }, []);
 
   useEffect(() => {
     localStorage.setItem('theme', 'light');
@@ -105,7 +117,8 @@ export default function App() {
   const fetchWorldCupData = async () => {
     setLoading(true);
     try {
-      const response = await fetch('/api/worldcup/data');
+      const clientTime = new Date().toISOString();
+      const response = await fetch(`/api/worldcup/data?clientTime=${encodeURIComponent(clientTime)}`);
       if (response.ok) {
         const result = await response.json();
         setData(result);
@@ -128,9 +141,11 @@ export default function App() {
     setRefreshing(true);
     setApiNotification(null);
     try {
-      const response = await fetch('/api/worldcup/refresh', {
+      const clientTime = new Date().toISOString();
+      const response = await fetch(`/api/worldcup/refresh?clientTime=${encodeURIComponent(clientTime)}`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' }
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ clientTime })
       });
       const result = await response.json();
       
@@ -473,8 +488,14 @@ export default function App() {
                                     {team.rank}
                                   </span>
                                 </td>
-                                <td className="py-3 px-1 font-semibold text-slate-800 dark:text-slate-200 relative overflow-visible group/tooltip cursor-help">
-                                  <span className="flex items-center gap-1.5">
+                                <td 
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    setActiveTooltipTeam(prev => prev === team.name ? null : team.name);
+                                  }}
+                                  className="py-3 px-1 font-semibold text-slate-800 dark:text-slate-200 relative overflow-visible group/tooltip cursor-help"
+                                >
+                                  <span className="flex items-center gap-1.5 select-none">
                                     <span className="text-base">{getCountryFlag(team.name)}</span>
                                     <span className={`truncate max-w-[95px] ${isKorea ? 'text-rose-700 dark:text-rose-400 font-extrabold' : ''}`} title={team.name}>
                                       {team.name}
@@ -482,18 +503,20 @@ export default function App() {
                                   </span>
 
                                   {/* Hover match results Tooltip */}
-                                  <div className={`absolute z-30 hidden group-hover/tooltip:flex flex-col w-[275px] bg-slate-900/95 backdrop-blur-md border border-slate-700/40 text-slate-200 rounded-xl shadow-2xl p-3 text-xs leading-relaxed pointer-events-none transition-all duration-200 ease-out origin-left animate-fade-in ${
+                                  <div className={`tooltip-content absolute z-30 ${
+                                    activeTooltipTeam === team.name ? "flex" : "hidden group-hover/tooltip:flex"
+                                  } flex-col w-[275px] bg-slate-900/95 backdrop-blur-md border border-slate-700/40 text-slate-200 rounded-xl shadow-2xl p-3 text-xs leading-relaxed pointer-events-none transition-all duration-200 ease-out origin-left animate-fade-in ${
                                     team.rank <= 2 
                                       ? "top-1 left-[75px]" 
                                       : "bottom-1 left-[75px]"
                                   }`}>
                                     {/* Tooltip Header */}
-                                    <div className="flex items-center justify-between border-b border-slate-800 pb-2 mb-2 font-bold text-white">
+                                    <div className="tooltip-title flex items-center justify-between border-b border-slate-800 pb-2 mb-2 font-bold text-white">
                                       <div className="flex items-center gap-1.5">
                                         <span className="text-base">{getCountryFlag(team.name)}</span>
                                         <span>{team.name} 조별 매치 기록</span>
                                       </div>
-                                      <span className="text-[10px] text-slate-500 font-normal">경과전적: {team.played}전 {team.won}승 {team.drawn}무 {team.lost}패</span>
+                                      <span className="tooltip-dim text-[10px] text-slate-500 font-normal">경과전적: {team.played}전 {team.won}승 {team.drawn}무 {team.lost}패</span>
                                     </div>
 
                                     {/* Matches List */}
@@ -505,7 +528,7 @@ export default function App() {
                                         );
 
                                         if (teamMatches.length === 0) {
-                                          return <p className="text-slate-500 text-center py-1 text-[11px]">매치 기록이 존재하지 않습니다.</p>;
+                                          return <p className="tooltip-dim text-slate-500 text-center py-1 text-[11px]">매치 기록이 존재하지 않습니다.</p>;
                                         }
 
                                         return teamMatches.map((m) => {
@@ -546,7 +569,7 @@ export default function App() {
 
                                           return (
                                             <div key={m.id} className="flex items-center justify-between gap-1.5 py-1 px-1.5 rounded bg-slate-800/20 hover:bg-slate-800/50 transition-colors border border-slate-800/10">
-                                              <div className="flex items-center gap-1 text-[10px] text-slate-500 w-12 shrink-0">
+                                              <div className="tooltip-dim flex items-center gap-1 text-[10px] text-slate-500 w-12 shrink-0">
                                                 <span>{m.date}</span>
                                               </div>
                                               <div className="flex items-center gap-1.5 truncate text-slate-300 flex-1">
@@ -554,7 +577,7 @@ export default function App() {
                                                 <span className="truncate font-medium text-slate-200">{opponent}</span>
                                               </div>
                                               <div className="flex items-center gap-2 justify-end shrink-0 whitespace-nowrap min-w-[70px]">
-                                                <span className="font-mono text-white text-[10px] font-bold whitespace-nowrap">{scoreText}</span>
+                                                <span className="tooltip-score font-mono text-white text-[10px] font-bold whitespace-nowrap">{scoreText}</span>
                                                 <span className={`text-[9px] px-1.5 py-0.5 rounded font-bold shrink-0 text-center min-w-[32px] ${badgeColor}`}>{resultText}</span>
                                               </div>
                                             </div>

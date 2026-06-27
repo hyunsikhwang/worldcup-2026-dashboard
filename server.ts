@@ -79,8 +79,10 @@ async function startServer() {
   app.use(express.json());
 
   // API Routes
-  app.get('/api/worldcup/data', (req, res) => {
+  app.get('/api/worldcup/data', async (req, res) => {
     try {
+      const clientTime = req.query.clientTime as string;
+      await refreshWorldCupStats(clientTime);
       res.json(sanitizeAndValidateWorldCupData(cachedWorldCupData));
     } catch (error: any) {
       res.status(500).json({ error: '데이터를 가져오는데 실패했습니다: ' + error.message });
@@ -203,11 +205,27 @@ async function startServer() {
     return new Date();
   }
 
-  async function refreshWorldCupStats(): Promise<boolean> {
+  function getSimulatedNow(clientTimeStr?: string): number {
+    if (clientTimeStr) {
+      const parsed = Date.parse(clientTimeStr);
+      if (!isNaN(parsed)) {
+        return parsed;
+      }
+    }
+    const now = new Date();
+    if (now.getFullYear() < 2026) {
+      // If server host is running in 2025 or before, project to the simulated time of June 26, 2026
+      return new Date("2026-06-26T19:44:05-07:00").getTime();
+    }
+    return now.getTime();
+  }
+
+  async function refreshWorldCupStats(clientTimeStr?: string): Promise<boolean> {
     try {
-      console.log('Refreshing live 2026 World Cup data from official channels...');
+      console.log(`Refreshing live 2026 World Cup data. Client time provided: ${clientTimeStr || 'none'}`);
       const freshData: WorldCupData = JSON.parse(JSON.stringify(initialWorldCupData));
       let fetchedFromFeed = false;
+      const now = getSimulatedNow(clientTimeStr);
 
       try {
         const response = await fetch('https://fixturedownload.com/feed/json/fifa-world-cup-2026', {
@@ -230,7 +248,6 @@ async function startServer() {
                 } else {
                   // If not finished, check if it is active live right now (within 115 minutes from match start)
                   const matchTime = new Date(fix.DateUtc).getTime();
-                  const now = Date.now();
                   const diffMinutes = (now - matchTime) / (60 * 1000);
                   
                   if (diffMinutes >= 0 && diffMinutes <= 115) {
@@ -261,7 +278,6 @@ async function startServer() {
       if (!fetchedFromFeed) {
         freshData.matches.forEach(match => {
           const matchTime = parseKstDateTime(match.date, match.time).getTime();
-          const now = Date.now();
           const diffMinutes = (now - matchTime) / (60 * 1000);
 
           if (diffMinutes >= 115) {
@@ -317,7 +333,7 @@ async function startServer() {
       sanitizeAndValidateWorldCupData(freshData);
 
       cachedWorldCupData = freshData;
-      cachedWorldCupData.lastUpdated = new Date().toLocaleString('ko-KR', { timeZone: 'Asia/Seoul' });
+      cachedWorldCupData.lastUpdated = new Date(now).toLocaleString('ko-KR', { timeZone: 'Asia/Seoul' });
       cachedWorldCupData.isRealTime = true;
       return fetchedFromFeed;
     } catch (err) {
@@ -335,7 +351,8 @@ async function startServer() {
 
   app.post('/api/worldcup/refresh', async (req, res) => {
     try {
-      const fetchedFromFeed = await refreshWorldCupStats();
+      const clientTime = req.body.clientTime || req.query.clientTime as string;
+      const fetchedFromFeed = await refreshWorldCupStats(clientTime);
       res.json({
         success: true,
         message: fetchedFromFeed 
