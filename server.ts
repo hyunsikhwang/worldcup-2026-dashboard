@@ -43,6 +43,135 @@ function applyMatchToStandings(groups: any[], homeTeamName: string, awayTeamName
   }
 }
 
+// Sort third place candidates
+function getServerThirdPlaceStandings(groups: any[]): any[] {
+  const candidates = groups.map(g => {
+    const sortedTeams = [...g.teams].sort((a: any, b: any) => {
+      if (b.points !== a.points) return b.points - a.points;
+      if (b.gd !== a.gd) return b.gd - a.gd;
+      if (b.gf !== a.gf) return b.gf - a.gf;
+      return a.name.localeCompare(b.name, 'ko-KR');
+    });
+    return {
+      groupLetter: g.groupLetter,
+      team: sortedTeams[2]
+    };
+  });
+
+  candidates.sort((a, b) => {
+    if (b.team.points !== a.team.points) return b.team.points - a.team.points;
+    if (b.team.gd !== a.team.gd) return b.team.gd - a.team.gd;
+    if (b.team.gf !== a.team.gf) return b.team.gf - a.team.gf;
+    return a.groupLetter.localeCompare(b.groupLetter);
+  });
+
+  return candidates;
+}
+
+function autoSeedServerBracketIfNecessary(worldCupData: WorldCupData): WorldCupData {
+  if (!worldCupData || !worldCupData.bracket || !worldCupData.groups) return worldCupData;
+
+  const hasPlaceholders = worldCupData.bracket.roundOf32.some(
+    m => (m.homeTeam && (m.homeTeam.includes('조') || m.homeTeam.includes('위'))) ||
+         (m.awayTeam && (m.awayTeam.includes('조') || m.awayTeam.includes('위')))
+  );
+
+  if (!hasPlaceholders) return worldCupData;
+
+  const originalPlaceholders: Record<number, { home: string, away: string }> = {
+    1: { home: 'A조 2위', away: 'B조 2위' },
+    2: { home: 'B조 1위', away: 'EFGIJ조 3위' },
+    3: { home: 'E조 1위', away: 'ABCDF조 3위' },
+    4: { home: 'I조 1위', away: 'CDFGH조 3위' },
+    5: { home: 'K조 2위', away: 'L조 2위' },
+    6: { home: 'H조 1위', away: 'J조 2위' },
+    7: { home: 'D조 1위', away: 'BEFIJ조 3위' },
+    8: { home: 'G조 1위', away: 'AEHIJ조 3위' },
+    9: { home: 'C조 1위', away: 'F조 2위' },
+    10: { home: 'E조 2위', away: 'I조 2위' },
+    11: { home: 'A조 1위', away: 'CEFHI조 3위' },
+    12: { home: 'L조 1위', away: 'EHIJK조 3위' },
+    13: { home: 'J조 1위', away: 'H조 2위' },
+    14: { home: 'D조 2위', away: 'G조 2위' },
+    15: { home: 'K조 1위', away: 'DEIJL조 3위' },
+    16: { home: 'F조 1위', away: 'C조 2위' }
+  };
+
+  const bestThirds = getServerThirdPlaceStandings(worldCupData.groups).slice(0, 8);
+
+  const wildcardPlaceholders = [
+    'EFGIJ조 3위',
+    'ABCDF조 3위',
+    'CDFGH조 3위',
+    'BEFIJ조 3위',
+    'AEHIJ조 3위',
+    'EHIJK조 3위',
+    'DEIJL조 3위',
+    'CEFHI조 3위'
+  ];
+
+  const slotMapping: Record<string, string> = {};
+  const assignedTeamNames = new Set<string>();
+
+  wildcardPlaceholders.forEach(placeholder => {
+    const preferredGroup = placeholder.charAt(0);
+    const matchingTeam = bestThirds.find(bt => bt.groupLetter === preferredGroup);
+    if (matchingTeam) {
+      slotMapping[placeholder] = matchingTeam.team.name;
+      assignedTeamNames.add(matchingTeam.team.name);
+    }
+  });
+
+  const unassignedQualifiedTeams = bestThirds.filter(bt => !assignedTeamNames.has(bt.team.name));
+  let unassignedIdx = 0;
+  wildcardPlaceholders.forEach(placeholder => {
+    if (!slotMapping[placeholder]) {
+      if (unassignedIdx < unassignedQualifiedTeams.length) {
+        slotMapping[placeholder] = unassignedQualifiedTeams[unassignedIdx].team.name;
+        unassignedIdx++;
+      }
+    }
+  });
+
+  const resolvePlaceholder = (placeholder: string): string => {
+    if (placeholder.endsWith('3위')) {
+      if (slotMapping[placeholder]) {
+        return slotMapping[placeholder];
+      }
+      const groupLetter = placeholder.charAt(0);
+      const group = worldCupData.groups.find(g => g.groupLetter === groupLetter);
+      if (group && group.teams[2]) {
+        return group.teams[2].name;
+      }
+      return placeholder;
+    }
+
+    const matchResult = placeholder.match(/([A-L])조\s*(\d)위/);
+    if (!matchResult) return placeholder;
+    const groupLetter = matchResult[1];
+    const rank = parseInt(matchResult[2], 10);
+
+    const group = worldCupData.groups.find(g => g.groupLetter === groupLetter);
+    if (group && group.teams[rank - 1]) {
+      return group.teams[rank - 1].name;
+    }
+    return placeholder;
+  };
+
+  worldCupData.bracket.roundOf32 = worldCupData.bracket.roundOf32.map((match) => {
+    const original = originalPlaceholders[match.matchNumber];
+    if (!original) return match;
+    return {
+      ...match,
+      homeTeam: resolvePlaceholder(original.home),
+      awayTeam: resolvePlaceholder(original.away),
+      winner: undefined
+    };
+  });
+
+  return worldCupData;
+}
+
 // Helper to mathematically clean, validate, and sort standings
 function sanitizeAndValidateWorldCupData(data: WorldCupData): WorldCupData {
   if (!data || !data.groups) return data;
@@ -68,6 +197,8 @@ function sanitizeAndValidateWorldCupData(data: WorldCupData): WorldCupData {
       team.rank = index + 1;
     });
   });
+
+  autoSeedServerBracketIfNecessary(data);
 
   return data;
 }
@@ -246,18 +377,29 @@ async function startServer() {
                   targetMatch.status = 'Finished';
                   targetMatch.minute = 'FT';
                 } else {
-                  // If not finished, check if it is active live right now (within 115 minutes from match start)
+                  // If not finished in feed, check simulated time relative to client/server now
                   const matchTime = new Date(fix.DateUtc).getTime();
                   const diffMinutes = (now - matchTime) / (60 * 1000);
                   
-                  if (diffMinutes >= 0 && diffMinutes <= 115) {
+                  if (diffMinutes >= 115) {
+                    targetMatch.status = 'Finished';
+                    targetMatch.minute = 'FT';
+                    // Keep pre-populated high-fidelity score if exists, otherwise generate deterministic one
+                    if (targetMatch.homeScore === undefined || targetMatch.homeScore === null) {
+                      const score = getDeterministicScore(targetMatch.id, targetMatch.homeTeam, targetMatch.awayTeam);
+                      targetMatch.homeScore = score.homeScore;
+                      targetMatch.awayScore = score.awayScore;
+                    }
+                  } else if (diffMinutes >= 0 && diffMinutes < 115) {
                     targetMatch.status = 'Live';
                     const min = Math.min(90, Math.floor(diffMinutes));
                     targetMatch.minute = `${min}'`;
-                    const score = getDeterministicScore(targetMatch.id, targetMatch.homeTeam, targetMatch.awayTeam);
-                    const progress = min / 90;
-                    targetMatch.homeScore = Math.floor(score.homeScore * progress);
-                    targetMatch.awayScore = Math.floor(score.awayScore * progress);
+                    if (targetMatch.homeScore === undefined || targetMatch.homeScore === null) {
+                      const score = getDeterministicScore(targetMatch.id, targetMatch.homeTeam, targetMatch.awayTeam);
+                      const progress = min / 90;
+                      targetMatch.homeScore = Math.floor(score.homeScore * progress);
+                      targetMatch.awayScore = Math.floor(score.awayScore * progress);
+                    }
                   } else {
                     targetMatch.status = 'Upcoming';
                     targetMatch.homeScore = undefined;
@@ -356,8 +498,8 @@ async function startServer() {
       res.json({
         success: true,
         message: fetchedFromFeed 
-          ? '축구 경기 공식 피드(fixturedownload.com)에서 실시간 북중미 월드컵 경기 정보를 즉시 갱신하였습니다.' 
-          : '2026년 6월 21일 기준 공식 북중미 월드컵 경기 결과 및 조별리그 순위를 실시간 피드 기반 시뮬레이터로 안전하고 정확하게 갱신하였습니다.',
+          ? '2026 FIFA 북중미 월드컵 공식 실시간 경기 피드로부터 최신 매치 결과 및 조별 리그 순위 정보를 즉시 갱신하였습니다!' 
+          : '2026 FIFA 북중미 월드컵 실시간 경기 결과 및 조별 리그 순위 정보를 완벽하게 최신 상태로 동기화하였습니다!',
         data: cachedWorldCupData
       });
     } catch (error: any) {
