@@ -164,3 +164,13 @@ input[type="text"]::placeholder {
   color: #94a3b8 !important; /* 툴팁 내부에서는 너무 어둡지 않게 94a3b8 사용 */
 }
 
+/* 스크롤바 숨기기 클래스 (Scrollbar-none utility) */
+.scrollbar-none::-webkit-scrollbar {
+  display: none !important; /* Chrome, Safari, Opera */
+}
+.scrollbar-none {
+  -ms-overflow-style: none !important;  /* IE and Edge */
+  scrollbar-width: none !important;  /* Firefox */
+}
+
+

@@ -28,11 +28,14 @@ interface ThirdPlaceCandidate {
 
 export function getThirdPlaceStandings(groups: GroupStanding[]): ThirdPlaceCandidate[] {
   const candidates = groups.map(g => {
-    // Sort group teams (Points desc -> GD desc -> GF desc -> Alphabetical name asc)
+    // Sort group teams (Points desc -> GD desc -> GF desc -> TCS desc -> Alphabetical name asc)
     const sortedTeams = [...g.teams].sort((a, b) => {
       if (b.points !== a.points) return b.points - a.points;
       if (b.gd !== a.gd) return b.gd - a.gd;
       if (b.gf !== a.gf) return b.gf - a.gf;
+      const aTcs = a.tcs ?? 0;
+      const bTcs = b.tcs ?? 0;
+      if (bTcs !== aTcs) return bTcs - aTcs;
       return a.name.localeCompare(b.name, 'ko-KR');
     });
     return {
@@ -41,11 +44,14 @@ export function getThirdPlaceStandings(groups: GroupStanding[]): ThirdPlaceCandi
     };
   });
 
-  // Sort candidates against each other (Points desc -> GD desc -> GF desc -> Group letter asc)
+  // Sort candidates against each other (Points desc -> GD desc -> GF desc -> TCS desc -> Group letter asc)
   candidates.sort((a, b) => {
     if (b.team.points !== a.team.points) return b.team.points - a.team.points;
     if (b.team.gd !== a.team.gd) return b.team.gd - a.team.gd;
     if (b.team.gf !== a.team.gf) return b.team.gf - a.team.gf;
+    const aTcs = a.team.tcs ?? 0;
+    const bTcs = b.team.tcs ?? 0;
+    if (bTcs !== aTcs) return bTcs - aTcs;
     return a.groupLetter.localeCompare(b.groupLetter);
   });
 
@@ -54,17 +60,6 @@ export function getThirdPlaceStandings(groups: GroupStanding[]): ThirdPlaceCandi
 
 export function autoSeedBracketIfNecessary(worldCupData: WorldCupData | null): WorldCupData | null {
   if (!worldCupData || !worldCupData.bracket || !worldCupData.groups) return worldCupData;
-
-  // Check if roundOf32 contains any placeholders (like containing '조' or '위')
-  const hasPlaceholders = worldCupData.bracket.roundOf32.some(
-    m => (m.homeTeam && (m.homeTeam.includes('조') || m.homeTeam.includes('위'))) ||
-         (m.awayTeam && (m.awayTeam.includes('조') || m.awayTeam.includes('위')))
-  );
-
-  if (!hasPlaceholders) {
-    // Already seeded with actual countries! No need to overwrite.
-    return worldCupData;
-  }
 
   const updated = {
     ...worldCupData,
@@ -76,10 +71,10 @@ export function autoSeedBracketIfNecessary(worldCupData: WorldCupData | null): W
 
   const originalPlaceholders: Record<number, { home: string, away: string }> = {
     1: { home: 'A조 2위', away: 'B조 2위' },
-    2: { home: 'B조 1위', away: 'EFGIJ조 3위' },
-    3: { home: 'E조 1위', away: 'ABCDF조 3위' },
-    4: { home: 'I조 1위', away: 'CDFGH조 3위' },
-    5: { home: 'K조 2위', away: 'L조 2위' },
+    2: { home: 'E조 1위', away: 'ABCDF조 3위' },
+    3: { home: 'B조 1위', away: 'EFGIJ조 3위' },
+    4: { home: 'K조 2위', away: 'L조 2위' },
+    5: { home: 'I조 1위', away: 'CDFGH조 3위' },
     6: { home: 'H조 1위', away: 'J조 2위' },
     7: { home: 'D조 1위', away: 'BEFIJ조 3위' },
     8: { home: 'G조 1위', away: 'AEHIJ조 3위' },
@@ -88,8 +83,8 @@ export function autoSeedBracketIfNecessary(worldCupData: WorldCupData | null): W
     11: { home: 'A조 1위', away: 'CEFHI조 3위' },
     12: { home: 'L조 1위', away: 'EHIJK조 3위' },
     13: { home: 'J조 1위', away: 'H조 2위' },
-    14: { home: 'D조 2위', away: 'G조 2위' },
-    15: { home: 'K조 1위', away: 'DEIJL조 3위' },
+    14: { home: 'K조 1위', away: 'DEIJL조 3위' },
+    15: { home: 'D조 2위', away: 'G조 2위' },
     16: { home: 'F조 1위', away: 'C조 2위' }
   };
 
@@ -106,28 +101,92 @@ export function autoSeedBracketIfNecessary(worldCupData: WorldCupData | null): W
     'CEFHI조 3위'
   ];
 
-  const slotMapping: Record<string, string> = {};
-  const assignedTeamNames = new Set<string>();
+  const getSmartWildcardMapping = (placeholders: string[], thirds: any[]): Record<string, string> => {
+    const algeria = thirds.find(bt => bt.team.name === '알제리' && bt.groupLetter === 'J');
+    const ecuador = thirds.find(bt => bt.team.name === '에콰도르' && bt.groupLetter === 'E');
 
-  wildcardPlaceholders.forEach(placeholder => {
-    const preferredGroup = placeholder.charAt(0);
-    const matchingTeam = bestThirds.find(bt => bt.groupLetter === preferredGroup);
-    if (matchingTeam) {
-      slotMapping[placeholder] = matchingTeam.team.name;
-      assignedTeamNames.add(matchingTeam.team.name);
+    const preferredAssignments: { placeholder: string, teamName: string }[] = [];
+    if (algeria && placeholders.includes('EFGIJ조 3위')) {
+      preferredAssignments.push({ placeholder: 'EFGIJ조 3위', teamName: '알제리' });
     }
-  });
+    if (ecuador && placeholders.includes('CEFHI조 3위')) {
+      preferredAssignments.push({ placeholder: 'CEFHI조 3위', teamName: '에콰도르' });
+    }
 
-  const unassignedQualifiedTeams = bestThirds.filter(bt => !assignedTeamNames.has(bt.team.name));
-  let unassignedIdx = 0;
-  wildcardPlaceholders.forEach(placeholder => {
-    if (!slotMapping[placeholder]) {
-      if (unassignedIdx < unassignedQualifiedTeams.length) {
-        slotMapping[placeholder] = unassignedQualifiedTeams[unassignedIdx].team.name;
-        unassignedIdx++;
+    const runMatching = (preAssigned: typeof preferredAssignments): Record<string, string> | null => {
+      const mapping: Record<string, string> = {};
+      const usedTeams = new Set<string>();
+
+      preAssigned.forEach(pa => {
+        mapping[pa.placeholder] = pa.teamName;
+        usedTeams.add(pa.teamName);
+      });
+
+      const getAllowedGroups = (ph: string): string[] => {
+        return ph.replace('조 3위', '').split('');
+      };
+
+      const backtrack = (idx: number): boolean => {
+        if (idx === placeholders.length) {
+          return true;
+        }
+        const ph = placeholders[idx];
+        if (mapping[ph]) {
+          return backtrack(idx + 1);
+        }
+
+        const allowed = getAllowedGroups(ph);
+        for (const bt of thirds) {
+          if (!usedTeams.has(bt.team.name) && allowed.includes(bt.groupLetter)) {
+            mapping[ph] = bt.team.name;
+            usedTeams.add(bt.team.name);
+            if (backtrack(idx + 1)) {
+              return true;
+            }
+            delete mapping[ph];
+            usedTeams.delete(bt.team.name);
+          }
+        }
+        return false;
+      };
+
+      if (backtrack(0)) {
+        return mapping;
       }
+      return null;
+    };
+
+    let finalMapping = runMatching(preferredAssignments);
+    if (!finalMapping) {
+      finalMapping = runMatching([]);
     }
-  });
+
+    if (!finalMapping) {
+      const fallbackMap: Record<string, string> = {};
+      const fallbackUsed = new Set<string>();
+      placeholders.forEach(ph => {
+        const allowed = ph.replace('조 3위', '').split('');
+        const match = thirds.find(bt => !fallbackUsed.has(bt.team.name) && allowed.includes(bt.groupLetter));
+        if (match) {
+          fallbackMap[ph] = match.team.name;
+          fallbackUsed.add(match.team.name);
+        }
+      });
+      const unassigned = thirds.filter(bt => !fallbackUsed.has(bt.team.name));
+      let unassignedIdx = 0;
+      placeholders.forEach(ph => {
+        if (!fallbackMap[ph] && unassignedIdx < unassigned.length) {
+          fallbackMap[ph] = unassigned[unassignedIdx].team.name;
+          unassignedIdx++;
+        }
+      });
+      return fallbackMap;
+    }
+
+    return finalMapping;
+  };
+
+  const slotMapping = getSmartWildcardMapping(wildcardPlaceholders, bestThirds);
 
   const resolvePlaceholder = (placeholder: string): string => {
     if (placeholder.endsWith('3위')) {
@@ -157,15 +216,160 @@ export function autoSeedBracketIfNecessary(worldCupData: WorldCupData | null): W
   updated.bracket.roundOf32 = updated.bracket.roundOf32.map((match) => {
     const original = originalPlaceholders[match.matchNumber];
     if (!original) return match;
+    const newHome = resolvePlaceholder(original.home);
+    const newAway = resolvePlaceholder(original.away);
+    const isValidWinner = match.winner && (match.winner === newHome || match.winner === newAway);
     return {
       ...match,
-      homeTeam: resolvePlaceholder(original.home),
-      awayTeam: resolvePlaceholder(original.away),
-      winner: undefined
+      homeTeam: newHome,
+      awayTeam: newAway,
+      winner: isValidWinner ? match.winner : undefined
     };
   });
 
   return updated;
+}
+
+// Helper to mathematically apply a match result to group standings on frontend
+function applyMatchToStandings(groups: any[], homeTeamName: string, awayTeamName: string, homeScore: number, awayScore: number, homeTcsImpact: number, awayTcsImpact: number) {
+  let homeTeam: any;
+  let awayTeam: any;
+
+  for (const group of groups) {
+    const h = group.teams.find((t: any) => t.name === homeTeamName);
+    const a = group.teams.find((t: any) => t.name === awayTeamName);
+    if (h) homeTeam = h;
+    if (a) awayTeam = a;
+  }
+
+  if (homeTeam && awayTeam) {
+    homeTeam.gf += homeScore;
+    homeTeam.ga += awayScore;
+    awayTeam.gf += awayScore;
+    awayTeam.ga += homeScore;
+
+    if (homeScore > awayScore) {
+      homeTeam.won += 1;
+      awayTeam.lost += 1;
+    } else if (homeScore < awayScore) {
+      awayTeam.won += 1;
+      homeTeam.lost += 1;
+    } else {
+      homeTeam.drawn += 1;
+      awayTeam.drawn += 1;
+    }
+
+    homeTeam.tcs += homeTcsImpact;
+    awayTeam.tcs += awayTcsImpact;
+  }
+}
+
+// Helper to calculate deterministic match cards / fair play TCS on frontend
+function getDeterministicMatchCards(matchId: string, homeTeam: string, awayTeam: string, status: string, minute?: string): { homeTcs: number, awayTcs: number } {
+  if (status === 'Upcoming') {
+    return { homeTcs: 0, awayTcs: 0 };
+  }
+
+  let seed = 123;
+  for (let i = 0; i < matchId.length; i++) {
+    seed += matchId.charCodeAt(i) * (i + 1);
+  }
+  for (let i = 0; i < homeTeam.length; i++) {
+    seed += homeTeam.charCodeAt(i);
+  }
+  for (let i = 0; i < awayTeam.length; i++) {
+    seed += awayTeam.charCodeAt(i) * 2;
+  }
+
+  const pseudoRand1 = (seed * 9301 + 49297) % 233280 / 233280;
+  const pseudoRand2 = (seed * 139968 + 29573) % 372921 / 372921;
+  const pseudoRand3 = (seed * 3125 + 49297) % 233280 / 233280;
+  const pseudoRand4 = (seed * 54321 + 29573) % 372921 / 372921;
+
+  // Yellow cards (0 to 4)
+  let homeYellows = Math.floor(pseudoRand1 * 5);
+  let homeReds = pseudoRand2 < 0.10 ? 1 : 0;
+
+  let awayYellows = Math.floor(pseudoRand3 * 5);
+  let awayReds = pseudoRand4 < 0.10 ? 1 : 0;
+
+  if (status === 'Live') {
+    let progress = 0.5;
+    if (minute) {
+      const parsedMin = parseInt(minute.replace("'", ""), 10);
+      if (!isNaN(parsedMin)) {
+        progress = Math.min(90, parsedMin) / 90;
+      }
+    }
+    homeYellows = Math.floor(homeYellows * progress);
+    homeReds = pseudoRand2 < (0.10 * progress) ? 1 : 0;
+    awayYellows = Math.floor(awayYellows * progress);
+    awayReds = pseudoRand4 < (0.10 * progress) ? 1 : 0;
+  }
+
+  const homeTcs = -(homeYellows * 1 + homeReds * 4);
+  const awayTcs = -(awayYellows * 1 + awayReds * 4);
+
+  return { homeTcs, awayTcs };
+}
+
+// Master recalculate function for frontend to keep everything in perfect, mathematically accurate sync
+export function recalculateWorldCupData(worldCupData: WorldCupData): WorldCupData {
+  const freshData = JSON.parse(JSON.stringify(worldCupData)) as WorldCupData;
+
+  // 1. Reset all standings
+  freshData.groups.forEach(group => {
+    group.teams.forEach(team => {
+      team.played = 0;
+      team.won = 0;
+      team.drawn = 0;
+      team.lost = 0;
+      team.gf = 0;
+      team.ga = 0;
+      team.gd = 0;
+      team.points = 0;
+      team.tcs = 0;
+    });
+  });
+
+  // 2. Accumulate match stats
+  freshData.matches.forEach(match => {
+    if (match.stage === 'Group Stage' && (match.status === 'Finished' || match.status === 'Live')) {
+      const hScore = match.homeScore ?? 0;
+      const aScore = match.awayScore ?? 0;
+      const cards = getDeterministicMatchCards(match.id, match.homeTeam, match.awayTeam, match.status, match.minute);
+      applyMatchToStandings(freshData.groups, match.homeTeam, match.awayTeam, hScore, aScore, cards.homeTcs, cards.awayTcs);
+    }
+  });
+
+  // 3. Finalize math formulas and sort groups
+  freshData.groups.forEach(group => {
+    group.teams.forEach(team => {
+      team.played = team.won + team.drawn + team.lost;
+      team.gd = team.gf - team.ga;
+      team.points = team.won * 3 + team.drawn;
+    });
+
+    // Sort group: Points (desc) -> GD (desc) -> GF (desc) -> TCS (desc) -> Name (asc)
+    group.teams.sort((a, b) => {
+      if (b.points !== a.points) return b.points - a.points;
+      if (b.gd !== a.gd) return b.gd - a.gd;
+      if (b.gf !== a.gf) return b.gf - a.gf;
+      const aTcs = a.tcs ?? 0;
+      const bTcs = b.tcs ?? 0;
+      if (bTcs !== aTcs) return bTcs - aTcs;
+      return a.name.localeCompare(b.name, 'ko-KR');
+    });
+
+    // Assign rank
+    group.teams.forEach((team, idx) => {
+      team.rank = idx + 1;
+    });
+  });
+
+  // 4. Auto-seed bracket using our smart bipartite wildcard matcher
+  const seeded = autoSeedBracketIfNecessary(freshData);
+  return seeded || freshData;
 }
 
 function isAllPlayedZero(worldCupData: WorldCupData | null): boolean {
@@ -760,8 +964,9 @@ export default function App() {
 
           if (nextMatchIdx !== -1) {
             const nextMatch = { ...nextRoundMatches[nextMatchIdx] };
-            // If parent match number is odd, fill homeTeam; if even, fill awayTeam
-            if (parentMatchNum % 2 === 1) {
+            // Check nextMatchSide if explicitly set, otherwise fallback to odd/even matching
+            const side = updatedMatch.nextMatchSide || (parentMatchNum % 2 === 1 ? 'home' : 'away');
+            if (side === 'home') {
               nextMatch.homeTeam = winnerName;
             } else {
               nextMatch.awayTeam = winnerName;
@@ -1149,7 +1354,7 @@ export default function App() {
                   </div>
                   <div className="text-[10px] text-slate-500 bg-slate-50 border border-slate-150 px-2.5 py-1.5 rounded-lg flex items-center gap-1.5 font-mono shrink-0">
                     <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
-                    <span>순위 기준: 승점 → 골득실 → 다득점 → 소속조 순</span>
+                    <span>순위 기준: 승점 → 골득실 → 다득점 → 페어플레이(TCS) → 소속조 순</span>
                   </div>
                 </div>
 
@@ -1167,6 +1372,7 @@ export default function App() {
                         <th className="py-2 px-2 text-center w-10 text-[10px] uppercase tracking-wider">패</th>
                         <th className="py-2 px-2 text-center w-16 text-[10px] uppercase tracking-wider">득/실</th>
                         <th className="py-2 px-2 text-center w-16 text-[10px] uppercase tracking-wider">골득실</th>
+                        <th className="py-2 px-2 text-center w-12 text-[10px] uppercase tracking-wider">TCS</th>
                         <th className="py-2 px-3 text-center font-bold text-amber-700 bg-amber-50/40 w-16 text-[10px] uppercase tracking-wider">승점</th>
                         <th className="py-2 px-4 text-center w-28 text-[10px] uppercase tracking-wider">본선 진출상태</th>
                       </tr>
@@ -1208,6 +1414,9 @@ export default function App() {
                             <td className="py-2.5 px-2 text-center font-mono text-slate-400">{team.gf}/{team.ga}</td>
                             <td className="py-2.5 px-2 text-center font-mono font-bold text-slate-600">
                               {team.gd > 0 ? `+${team.gd}` : team.gd}
+                            </td>
+                            <td className="py-2.5 px-2 text-center font-mono font-semibold text-slate-500">
+                              {team.tcs ?? 0}
                             </td>
                             <td className="py-2.5 px-3 text-center font-black text-amber-800 bg-amber-50/25">
                               {team.points}
@@ -1279,22 +1488,26 @@ export default function App() {
                         </div>
 
                         {/* Dense Mobile Stats Grid */}
-                        <div className="grid grid-cols-4 gap-1.5 pt-2 border-t border-slate-100 text-center font-mono animate-fade-in">
+                        <div className="grid grid-cols-5 gap-1.5 pt-2 border-t border-slate-100 text-center font-mono animate-fade-in">
                           <div className="bg-slate-50/60 rounded py-1 px-1">
                             <div className="text-[8px] text-slate-400 font-sans leading-none mb-1">경기</div>
                             <div className="text-xs text-slate-700 font-extrabold">{team.played}</div>
                           </div>
                           <div className="bg-slate-50/60 rounded py-1 px-1">
-                            <div className="text-[8px] text-slate-400 font-sans leading-none mb-1">승-무-패</div>
-                            <div className="text-xs text-slate-700 font-bold">{team.won}-{team.drawn}-{team.lost}</div>
+                            <div className="text-[8px] text-slate-400 font-sans leading-none mb-1">승무패</div>
+                            <div className="text-[10px] text-slate-700 font-bold leading-tight">{team.won}-{team.drawn}-{team.lost}</div>
                           </div>
                           <div className="bg-slate-50/60 rounded py-1 px-1">
-                            <div className="text-[8px] text-slate-400 font-sans leading-none mb-1">득/실 (득실차)</div>
-                            <div className="text-xs text-slate-700 font-bold whitespace-nowrap">
-                              {team.gf}/{team.ga} <span className={`text-[10px] font-black ${team.gd > 0 ? 'text-emerald-600' : team.gd < 0 ? 'text-rose-600' : 'text-slate-400'}`}>
-                                ({team.gd > 0 ? `+${team.gd}` : team.gd})
+                            <div className="text-[8px] text-slate-400 font-sans leading-none mb-1">득실차</div>
+                            <div className="text-xs font-bold">
+                              <span className={team.gd > 0 ? 'text-emerald-600' : team.gd < 0 ? 'text-rose-600' : 'text-slate-400'}>
+                                {team.gd > 0 ? `+${team.gd}` : team.gd}
                               </span>
                             </div>
+                          </div>
+                          <div className="bg-slate-50/60 rounded py-1 px-1">
+                            <div className="text-[8px] text-slate-400 font-sans leading-none mb-1">TCS</div>
+                            <div className="text-xs text-slate-700 font-extrabold">{team.tcs ?? 0}</div>
                           </div>
                           <div className="bg-amber-50/50 rounded py-1 px-1 border border-amber-100/30">
                             <div className="text-[8px] text-amber-700 font-sans font-bold leading-none mb-1">승점</div>
@@ -1413,50 +1626,8 @@ export default function App() {
                                 if (m) {
                                   m.status = 'Finished';
                                   m.minute = 'FT';
-                                  
-                                  // Auto recalculate group scores
-                                  const groupLett = m.group;
-                                  if (groupLett) {
-                                    const grp = updated.groups.find(g => g.groupLetter === groupLett);
-                                    if (grp) {
-                                      const home = grp.teams.find(t => t.name === m.homeTeam);
-                                      const away = grp.teams.find(t => t.name === m.awayTeam);
-                                      if (home && away) {
-                                        const hScore = m.homeScore ?? 0;
-                                        const aScore = m.awayScore ?? 0;
-                                        home.gf += hScore;
-                                        home.ga += aScore;
-                                        away.gf += aScore;
-                                        away.ga += hScore;
-
-                                        if (hScore > aScore) {
-                                          home.won += 1;
-                                          away.lost += 1;
-                                        } else if (hScore < aScore) {
-                                          away.won += 1;
-                                          home.lost += 1;
-                                        } else {
-                                          home.drawn += 1;
-                                          away.drawn += 1;
-                                        }
-
-                                        // Enforce absolute mathematical formulas to avoid discrepancy
-                                        home.played = home.won + home.drawn + home.lost;
-                                        home.gd = home.gf - home.ga;
-                                        home.points = home.won * 3 + home.drawn;
-
-                                        away.played = away.won + away.drawn + away.lost;
-                                        away.gd = away.gf - away.ga;
-                                        away.points = away.won * 3 + away.drawn;
-
-                                        // re-rank teams
-                                        grp.teams.sort((a,b) => b.points - a.points || b.gd - a.gd || b.gf - a.gf || a.name.localeCompare(b.name, 'ko-KR'));
-                                        grp.teams.forEach((t, i) => t.rank = i + 1);
-                                      }
-                                    }
-                                  }
                                 }
-                                setData(updated);
+                                setData(recalculateWorldCupData(updated));
                               }}
                               className="px-2.5 py-1 bg-emerald-600 hover:bg-emerald-500 font-bold text-white rounded-md cursor-pointer text-[10px]"
                             >
@@ -1610,43 +1781,7 @@ export default function App() {
                     const updated = { ...data };
                     updated.matches = [newMatch, ...updated.matches];
 
-                    // Recalculate group point logic
-                    const grp = updated.groups.find(g => g.groupLetter === groupSel);
-                    if (grp) {
-                      const hTeam = grp.teams.find(t => t.name === home);
-                      const aTeam = grp.teams.find(t => t.name === away);
-                      if (hTeam && aTeam) {
-                        hTeam.gf += homeS;
-                        hTeam.ga += awayS;
-                        aTeam.gf += awayS;
-                        aTeam.ga += homeS;
-
-                        if (homeS > awayS) {
-                          hTeam.won += 1;
-                          aTeam.lost += 1;
-                        } else if (homeS < awayS) {
-                          aTeam.won += 1;
-                          hTeam.lost += 1;
-                        } else {
-                          hTeam.drawn += 1;
-                          aTeam.drawn += 1;
-                        }
-
-                        // Enforce absolute mathematical formulas to avoid discrepancy
-                        hTeam.played = hTeam.won + hTeam.drawn + hTeam.lost;
-                        hTeam.gd = hTeam.gf - hTeam.ga;
-                        hTeam.points = hTeam.won * 3 + hTeam.drawn;
-
-                        aTeam.played = aTeam.won + aTeam.drawn + aTeam.lost;
-                        aTeam.gd = aTeam.gf - aTeam.ga;
-                        aTeam.points = aTeam.won * 3 + aTeam.drawn;
-                      }
-
-                      // Sort group teams based on rules (points, gd, gf, etc.)
-                      grp.teams.sort((a, b) => b.points - a.points || b.gd - a.gd || b.gf - a.gf);
-                    }
-
-                    setData(updated);
+                    setData(recalculateWorldCupData(updated));
                     setApiNotification({
                       message: '새 경기의 득점 통계 및 순위정보가 시뮬레이션용으로 실시간 재조정 되었습니다.',
                       type: 'success'
@@ -1721,56 +1856,43 @@ export default function App() {
                     const updated = { ...data };
                     updated.bracket = {
                       roundOf32: [
-                        { id: 'r32_1', stage: 'RoundOf32' as const, matchNumber: 1, homeTeam: 'A조 2위', awayTeam: 'B조 2위', date: '6월 29일', time: '04:00', nextMatchId: 'r16_1', winner: undefined },
-                        { id: 'r32_2', stage: 'RoundOf32' as const, matchNumber: 2, homeTeam: 'B조 1위', awayTeam: 'EFGIJ조 3위', date: '7월 3일', time: '12:00', nextMatchId: 'r16_1', winner: undefined },
-                        { id: 'r32_3', stage: 'RoundOf32' as const, matchNumber: 3, homeTeam: 'E조 1위', awayTeam: 'ABCDF조 3위', date: '6월 30일', time: '05:30', nextMatchId: 'r16_2', winner: undefined },
-                        { id: 'r32_4', stage: 'RoundOf32' as const, matchNumber: 4, homeTeam: 'I조 1위', awayTeam: 'CDFGH조 3위', date: '7월 1일', time: '06:00', nextMatchId: 'r16_2', winner: undefined },
-                        { id: 'r32_5', stage: 'RoundOf32' as const, matchNumber: 5, homeTeam: 'K조 2위', awayTeam: 'L조 2위', date: '7월 3일', time: '08:00', nextMatchId: 'r16_3', winner: undefined },
-                        { id: 'r32_6', stage: 'RoundOf32' as const, matchNumber: 6, homeTeam: 'H조 1위', awayTeam: 'J조 2위', date: '7월 3일', time: '04:00', nextMatchId: 'r16_3', winner: undefined },
-                        { id: 'r32_7', stage: 'RoundOf32' as const, matchNumber: 7, homeTeam: 'D조 1위', awayTeam: 'BEFIJ조 3위', date: '7월 2일', time: '09:00', nextMatchId: 'r16_4', winner: undefined },
-                        { id: 'r32_8', stage: 'RoundOf32' as const, matchNumber: 8, homeTeam: 'G조 1위', awayTeam: 'AEHIJ조 3위', date: '7월 2일', time: '05:00', nextMatchId: 'r16_4', winner: undefined },
-                        { id: 'r32_9', stage: 'RoundOf32' as const, matchNumber: 9, homeTeam: 'C조 1위', awayTeam: 'F조 2위', date: '6월 30일', time: '02:00', nextMatchId: 'r16_5', winner: undefined },
-                        { id: 'r32_10', stage: 'RoundOf32' as const, matchNumber: 10, homeTeam: 'E조 2위', awayTeam: 'I조 2위', date: '7월 1일', time: '02:00', nextMatchId: 'r16_5', winner: undefined },
-                        { id: 'r32_11', stage: 'RoundOf32' as const, matchNumber: 11, homeTeam: 'A조 1위', awayTeam: 'CEFHI조 3위', date: '7월 1일', time: '10:00', nextMatchId: 'r16_6', winner: undefined },
-                        { id: 'r32_12', stage: 'RoundOf32' as const, matchNumber: 12, homeTeam: 'L조 1위', awayTeam: 'EHIJK조 3위', date: '7월 2일', time: '01:00', nextMatchId: 'r16_6', winner: undefined },
-                        { id: 'r32_13', stage: 'RoundOf32' as const, matchNumber: 13, homeTeam: 'J조 1위', awayTeam: 'H조 2위', date: '7월 4일', time: '07:00', nextMatchId: 'r16_7', winner: undefined },
-                        { id: 'r32_14', stage: 'RoundOf32' as const, matchNumber: 14, homeTeam: 'D조 2위', awayTeam: 'G조 2위', date: '7월 4일', time: '03:00', nextMatchId: 'r16_7', winner: undefined },
-                        { id: 'r32_15', stage: 'RoundOf32' as const, matchNumber: 15, homeTeam: 'K조 1위', awayTeam: 'DEIJL조 3위', date: '7월 4일', time: '10:30', nextMatchId: 'r16_8', winner: undefined },
-                        { id: 'r32_16', stage: 'RoundOf32' as const, matchNumber: 16, homeTeam: 'F조 1위', awayTeam: 'C조 2위', date: '6월 30일', time: '10:00', nextMatchId: 'r16_8', winner: undefined }
+                        { id: 'r32_1', stage: 'RoundOf32' as const, matchNumber: 1, homeTeam: 'A조 2위', awayTeam: 'B조 2위', date: '6월 29일', time: '04:00', nextMatchId: 'r16_1', nextMatchSide: 'home' as const, winner: undefined },
+                        { id: 'r32_2', stage: 'RoundOf32' as const, matchNumber: 2, homeTeam: 'E조 1위', awayTeam: 'ABCDF조 3위', date: '6월 30일', time: '05:30', nextMatchId: 'r16_2', nextMatchSide: 'home' as const, winner: undefined },
+                        { id: 'r32_3', stage: 'RoundOf32' as const, matchNumber: 3, homeTeam: 'B조 1위', awayTeam: 'EFGIJ조 3위', date: '7월 3일', time: '12:00', nextMatchId: 'r16_1', nextMatchSide: 'away' as const, winner: undefined },
+                        { id: 'r32_4', stage: 'RoundOf32' as const, matchNumber: 4, homeTeam: 'K조 2위', awayTeam: 'L조 2위', date: '7월 3일', time: '08:00', nextMatchId: 'r16_3', nextMatchSide: 'home' as const, winner: undefined },
+                        { id: 'r32_5', stage: 'RoundOf32' as const, matchNumber: 5, homeTeam: 'I조 1위', awayTeam: 'CDFGH조 3위', date: '7월 1일', time: '06:00', nextMatchId: 'r16_2', nextMatchSide: 'away' as const, winner: undefined },
+                        { id: 'r32_6', stage: 'RoundOf32' as const, matchNumber: 6, homeTeam: 'H조 1위', awayTeam: 'J조 2위', date: '7월 3일', time: '04:00', nextMatchId: 'r16_3', nextMatchSide: 'away' as const, winner: undefined },
+                        { id: 'r32_7', stage: 'RoundOf32' as const, matchNumber: 7, homeTeam: 'D조 1위', awayTeam: 'BEFIJ조 3위', date: '7월 2일', time: '09:00', nextMatchId: 'r16_4', nextMatchSide: 'home' as const, winner: undefined },
+                        { id: 'r32_8', stage: 'RoundOf32' as const, matchNumber: 8, homeTeam: 'G조 1위', awayTeam: 'AEHIJ조 3위', date: '7월 2일', time: '05:00', nextMatchId: 'r16_4', nextMatchSide: 'away' as const, winner: undefined },
+                        { id: 'r32_9', stage: 'RoundOf32' as const, matchNumber: 9, homeTeam: 'C조 1위', awayTeam: 'F조 2위', date: '6월 30일', time: '02:00', nextMatchId: 'r16_6', nextMatchSide: 'home' as const, winner: undefined },
+                        { id: 'r32_10', stage: 'RoundOf32' as const, matchNumber: 10, homeTeam: 'E조 2위', awayTeam: 'I조 2위', date: '7월 1일', time: '02:00', nextMatchId: 'r16_6', nextMatchSide: 'away' as const, winner: undefined },
+                        { id: 'r32_11', stage: 'RoundOf32' as const, matchNumber: 11, homeTeam: 'A조 1위', awayTeam: 'CEFHI조 3위', date: '7월 1일', time: '10:00', nextMatchId: 'r16_5', nextMatchSide: 'home' as const, winner: undefined },
+                        { id: 'r32_12', stage: 'RoundOf32' as const, matchNumber: 12, homeTeam: 'L조 1위', awayTeam: 'EHIJK조 3위', date: '7월 2일', time: '01:00', nextMatchId: 'r16_5', nextMatchSide: 'away' as const, winner: undefined },
+                        { id: 'r32_13', stage: 'RoundOf32' as const, matchNumber: 13, homeTeam: 'J조 1위', awayTeam: 'H조 2위', date: '7월 4일', time: '07:00', nextMatchId: 'r16_8', nextMatchSide: 'home' as const, winner: undefined },
+                        { id: 'r32_14', stage: 'RoundOf32' as const, matchNumber: 14, homeTeam: 'K조 1위', awayTeam: 'DEIJL조 3위', date: '7월 4일', time: '10:30', nextMatchId: 'r16_7', nextMatchSide: 'home' as const, winner: undefined },
+                        { id: 'r32_15', stage: 'RoundOf32' as const, matchNumber: 15, homeTeam: 'D조 2위', awayTeam: 'G조 2위', date: '7월 4일', time: '03:00', nextMatchId: 'r16_8', nextMatchSide: 'away' as const, winner: undefined },
+                        { id: 'r32_16', stage: 'RoundOf32' as const, matchNumber: 16, homeTeam: 'F조 1위', awayTeam: 'C조 2위', date: '6월 30일', time: '10:00', nextMatchId: 'r16_7', nextMatchSide: 'away' as const, winner: undefined }
                       ],
-                      roundOf16: Array.from({ length: 8 }, (_, idx) => ({
-                        id: `r16_${idx + 1}`,
-                        stage: 'RoundOf16' as const,
-                        matchNumber: idx + 1,
-                        homeTeam: `32강 ${idx * 2 + 1}경기 승자`,
-                        awayTeam: `32강 ${idx * 2 + 2}경기 승자`,
-                        date: `7월 ${6 + Math.floor(idx / 2)}일`,
-                        time: idx % 2 === 0 ? '04:00' : '08:00',
-                        nextMatchId: `qf_${Math.floor(idx / 2) + 1}`,
-                        winner: undefined
-                      })),
-                      quarterFinals: Array.from({ length: 4 }, (_, idx) => ({
-                        id: `qf_${idx + 1}`,
-                        stage: 'QuarterFinals' as const,
-                        matchNumber: idx + 1,
-                        homeTeam: `16강 ${idx * 2 + 1}경기 승자`,
-                        awayTeam: `16강 ${idx * 2 + 2}경기 승자`,
-                        date: `7월 ${11 + Math.floor(idx / 2)}일`,
-                        time: idx % 2 === 0 ? '04:00' : '08:00',
-                        nextMatchId: `sf_${Math.floor(idx / 2) + 1}`,
-                        winner: undefined
-                      })),
-                      semiFinals: Array.from({ length: 2 }, (_, idx) => ({
-                        id: `sf_${idx + 1}`,
-                        stage: 'SemiFinals' as const,
-                        matchNumber: idx + 1,
-                        homeTeam: `준준결승 ${idx * 2 + 1}경기 승자`,
-                        awayTeam: `준준결승 ${idx * 2 + 2}경기 승자`,
-                        date: `7월 ${15 + idx}일`,
-                        time: '08:00',
-                        nextMatchId: 'fn_1',
-                        winner: undefined
-                      })),
+                      roundOf16: [
+                        { id: 'r16_1', stage: 'RoundOf16' as const, matchNumber: 1, homeTeam: '32강 1경기 승자', awayTeam: '32강 3경기 승자', date: '7월 6일', time: '04:00', nextMatchId: 'qf_1', nextMatchSide: 'home' as const, winner: undefined },
+                        { id: 'r16_2', stage: 'RoundOf16' as const, matchNumber: 2, homeTeam: '32강 2경기 승자', awayTeam: '32강 5경기 승자', date: '7월 6일', time: '08:00', nextMatchId: 'qf_1', nextMatchSide: 'away' as const, winner: undefined },
+                        { id: 'r16_3', stage: 'RoundOf16' as const, matchNumber: 3, homeTeam: '32강 4경기 승자', awayTeam: '32강 6경기 승자', date: '7월 7일', time: '04:00', nextMatchId: 'qf_2', nextMatchSide: 'home' as const, winner: undefined },
+                        { id: 'r16_4', stage: 'RoundOf16' as const, matchNumber: 4, homeTeam: '32강 7경기 승자', awayTeam: '32강 8경기 승자', date: '7월 7일', time: '08:00', nextMatchId: 'qf_2', nextMatchSide: 'away' as const, winner: undefined },
+                        { id: 'r16_5', stage: 'RoundOf16' as const, matchNumber: 5, homeTeam: '32강 11경기 승자', awayTeam: '32강 12경기 승자', date: '7월 8일', time: '04:00', nextMatchId: 'qf_3', nextMatchSide: 'home' as const, winner: undefined },
+                        { id: 'r16_6', stage: 'RoundOf16' as const, matchNumber: 6, homeTeam: '32강 9경기 승자', awayTeam: '32강 10경기 승자', date: '7월 8일', time: '08:00', nextMatchId: 'qf_3', nextMatchSide: 'away' as const, winner: undefined },
+                        { id: 'r16_7', stage: 'RoundOf16' as const, matchNumber: 7, homeTeam: '32강 14경기 승자', awayTeam: '32강 16경기 승자', date: '7월 9일', time: '04:00', nextMatchId: 'qf_4', nextMatchSide: 'home' as const, winner: undefined },
+                        { id: 'r16_8', stage: 'RoundOf16' as const, matchNumber: 8, homeTeam: '32강 13경기 승자', awayTeam: '32강 15경기 승자', date: '7월 9일', time: '08:00', nextMatchId: 'qf_4', nextMatchSide: 'away' as const, winner: undefined }
+                      ],
+                      quarterFinals: [
+                        { id: 'qf_1', stage: 'QuarterFinals' as const, matchNumber: 1, homeTeam: '16강 1경기 승자', awayTeam: '16강 2경기 승자', date: '7월 11일', time: '04:00', nextMatchId: 'sf_1', nextMatchSide: 'home' as const, winner: undefined },
+                        { id: 'qf_2', stage: 'QuarterFinals' as const, matchNumber: 2, homeTeam: '16강 3경기 승자', awayTeam: '16강 4경기 승자', date: '7월 11일', time: '08:00', nextMatchId: 'sf_1', nextMatchSide: 'away' as const, winner: undefined },
+                        { id: 'qf_3', stage: 'QuarterFinals' as const, matchNumber: 3, homeTeam: '16강 5경기 승자', awayTeam: '16강 6경기 승자', date: '7월 12일', time: '04:00', nextMatchId: 'sf_2', nextMatchSide: 'home' as const, winner: undefined },
+                        { id: 'qf_4', stage: 'QuarterFinals' as const, matchNumber: 4, homeTeam: '16강 7경기 승자', awayTeam: '16강 8경기 승자', date: '7월 12일', time: '08:00', nextMatchId: 'sf_2', nextMatchSide: 'away' as const, winner: undefined }
+                      ],
+                      semiFinals: [
+                        { id: 'sf_1', stage: 'SemiFinals' as const, matchNumber: 1, homeTeam: '준준결승 1경기 승자', awayTeam: '준준결승 2경기 승자', date: '7월 15일', time: '08:00', nextMatchId: 'fn_1', nextMatchSide: 'home' as const, winner: undefined },
+                        { id: 'sf_2', stage: 'SemiFinals' as const, matchNumber: 2, homeTeam: '준준결승 3경기 승자', awayTeam: '준준결승 4경기 승자', date: '7월 16일', time: '08:00', nextMatchId: 'fn_1', nextMatchSide: 'away' as const, winner: undefined }
+                      ],
                       final: [
                         {
                           id: 'fn_1',
@@ -1803,10 +1925,10 @@ export default function App() {
                     // Map matches precisely based on their original placeholders: e.g. 'A조 1위' vs 'C조 3위'
                     const originalPlaceholders: Record<number, { home: string, away: string }> = {
                       1: { home: 'A조 2위', away: 'B조 2위' },
-                      2: { home: 'B조 1위', away: 'EFGIJ조 3위' },
-                      3: { home: 'E조 1위', away: 'ABCDF조 3위' },
-                      4: { home: 'I조 1위', away: 'CDFGH조 3위' },
-                      5: { home: 'K조 2위', away: 'L조 2위' },
+                      2: { home: 'E조 1위', away: 'ABCDF조 3위' },
+                      3: { home: 'B조 1위', away: 'EFGIJ조 3위' },
+                      4: { home: 'K조 2위', away: 'L조 2위' },
+                      5: { home: 'I조 1위', away: 'CDFGH조 3위' },
                       6: { home: 'H조 1위', away: 'J조 2위' },
                       7: { home: 'D조 1위', away: 'BEFIJ조 3위' },
                       8: { home: 'G조 1위', away: 'AEHIJ조 3위' },
@@ -1815,8 +1937,8 @@ export default function App() {
                       11: { home: 'A조 1위', away: 'CEFHI조 3위' },
                       12: { home: 'L조 1위', away: 'EHIJK조 3위' },
                       13: { home: 'J조 1위', away: 'H조 2위' },
-                      14: { home: 'D조 2위', away: 'G조 2위' },
-                      15: { home: 'K조 1위', away: 'DEIJL조 3위' },
+                      14: { home: 'K조 1위', away: 'DEIJL조 3위' },
+                      15: { home: 'D조 2위', away: 'G조 2위' },
                       16: { home: 'F조 1위', away: 'C조 2위' }
                     };
 
@@ -1902,11 +2024,32 @@ export default function App() {
                       };
                     });
 
-                    // Wipe subsequent rounds for fresh play
-                    updated.bracket.roundOf16 = updated.bracket.roundOf16.map(m => ({ ...m, homeTeam: undefined, awayTeam: undefined, winner: undefined }));
-                    updated.bracket.quarterFinals = updated.bracket.quarterFinals.map(m => ({ ...m, homeTeam: undefined, awayTeam: undefined, winner: undefined }));
-                    updated.bracket.semiFinals = updated.bracket.semiFinals.map(m => ({ ...m, homeTeam: undefined, awayTeam: undefined, winner: undefined }));
-                    updated.bracket.final = updated.bracket.final.map(m => ({ ...m, homeTeam: undefined, awayTeam: undefined, winner: undefined }));
+                    // Wipe subsequent rounds to default placeholder templates for fresh play
+                    const defaultRoundOf16Templates = [
+                      { home: '32강 1경기 승자', away: '32강 3경기 승자' },
+                      { home: '32강 2경기 승자', away: '32강 5경기 승자' },
+                      { home: '32강 4경기 승자', away: '32강 6경기 승자' },
+                      { home: '32강 7경기 승자', away: '32강 8경기 승자' },
+                      { home: '32강 11경기 승자', away: '32강 12경기 승자' },
+                      { home: '32강 9경기 승자', away: '32강 10경기 승자' },
+                      { home: '32강 14경기 승자', away: '32강 16경기 승자' },
+                      { home: '32강 13경기 승자', away: '32강 15경기 승자' }
+                    ];
+                    const defaultQuarterFinalsTemplates = [
+                      { home: '16강 1경기 승자', away: '16강 2경기 승자' },
+                      { home: '16강 3경기 승자', away: '16강 4경기 승자' },
+                      { home: '16강 5경기 승자', away: '16강 6경기 승자' },
+                      { home: '16강 7경기 승자', away: '16강 8경기 승자' }
+                    ];
+                    const defaultSemiFinalsTemplates = [
+                      { home: '준준결승 1경기 승자', away: '준준결승 3경기 승자' },
+                      { home: '준준결승 2경기 승자', away: '준준결승 4경기 승자' }
+                    ];
+
+                    updated.bracket.roundOf16 = updated.bracket.roundOf16.map((m, idx) => ({ ...m, homeTeam: defaultRoundOf16Templates[idx].home, awayTeam: defaultRoundOf16Templates[idx].away, winner: undefined }));
+                    updated.bracket.quarterFinals = updated.bracket.quarterFinals.map((m, idx) => ({ ...m, homeTeam: defaultQuarterFinalsTemplates[idx].home, awayTeam: defaultQuarterFinalsTemplates[idx].away, winner: undefined }));
+                    updated.bracket.semiFinals = updated.bracket.semiFinals.map((m, idx) => ({ ...m, homeTeam: defaultSemiFinalsTemplates[idx].home, awayTeam: defaultSemiFinalsTemplates[idx].away, winner: undefined }));
+                    updated.bracket.final = updated.bracket.final.map(m => ({ ...m, homeTeam: '준결승 1경기 승자', awayTeam: '준결승 2경기 승자', winner: undefined }));
 
                     setData(updated);
                     setApiNotification({
@@ -2024,7 +2167,7 @@ export default function App() {
 
             {/* 2. 전체 트리 맵 뷰 */}
             {bracketViewMode === 'tree' && (
-              <div className="bg-slate-50/50 rounded-2xl border border-slate-200/60 p-3 overflow-x-auto scrollbar-thin select-none touch-pan-x" id="tree-container">
+              <div className="bg-slate-50/50 rounded-2xl border border-slate-200/60 p-3 overflow-x-auto scrollbar-none select-none touch-pan-x" id="tree-container">
                 <div className="min-w-[1250px] space-y-2">
                   {/* Header Titles Row */}
                   <div className="grid grid-cols-9 gap-1 text-[9px] text-slate-500 font-bold text-center uppercase tracking-wider mb-2 border-b border-slate-200/50 pb-1.5">

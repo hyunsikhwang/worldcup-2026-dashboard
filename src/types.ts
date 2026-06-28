@@ -9,6 +9,7 @@ export interface TeamStanding {
   ga: number;
   gd: number;
   points: number;
+  tcs: number;
 }
 
 export interface GroupStanding {
@@ -43,6 +44,7 @@ export interface BracketMatch {
   time?: string;
   // reference details to which match winner goes next
   nextMatchId?: string;
+  nextMatchSide?: 'home' | 'away';
 }
 
 export interface BracketData {

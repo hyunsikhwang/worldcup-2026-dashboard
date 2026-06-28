@@ -2,7 +2,7 @@ import express from 'express';
 import path from 'path';
 import { createServer as createViteServer } from 'vite';
 import dotenv from 'dotenv';
-import { initialWorldCupData } from './src/initialData';
+import { initialWorldCupData } from './src/utils/worldcupDefaults';
 import { WorldCupData } from './src/types';
 
 // Load environment variables
@@ -12,7 +12,7 @@ dotenv.config();
 let cachedWorldCupData: WorldCupData = { ...initialWorldCupData };
 
 // Helper to mathematically apply a match result to group standings
-function applyMatchToStandings(groups: any[], homeTeamName: string, awayTeamName: string, homeScore: number, awayScore: number) {
+function applyMatchToStandings(groups: any[], homeTeamName: string, awayTeamName: string, homeScore: number, awayScore: number, homeTcsImpact: number, awayTcsImpact: number) {
   let homeTeam: any;
   let awayTeam: any;
 
@@ -40,7 +40,59 @@ function applyMatchToStandings(groups: any[], homeTeamName: string, awayTeamName
       homeTeam.drawn += 1;
       awayTeam.drawn += 1;
     }
+
+    homeTeam.tcs += homeTcsImpact;
+    awayTeam.tcs += awayTcsImpact;
   }
+}
+
+// Helper to calculate deterministic match cards / fair play TCS
+function getDeterministicMatchCards(matchId: string, homeTeam: string, awayTeam: string, status: string, minute?: string): { homeTcs: number, awayTcs: number } {
+  if (status === 'Upcoming') {
+    return { homeTcs: 0, awayTcs: 0 };
+  }
+
+  let seed = 123;
+  for (let i = 0; i < matchId.length; i++) {
+    seed += matchId.charCodeAt(i) * (i + 1);
+  }
+  for (let i = 0; i < homeTeam.length; i++) {
+    seed += homeTeam.charCodeAt(i);
+  }
+  for (let i = 0; i < awayTeam.length; i++) {
+    seed += awayTeam.charCodeAt(i) * 2;
+  }
+
+  const pseudoRand1 = (seed * 9301 + 49297) % 233280 / 233280;
+  const pseudoRand2 = (seed * 139968 + 29573) % 372921 / 372921;
+  const pseudoRand3 = (seed * 3125 + 49297) % 233280 / 233280;
+  const pseudoRand4 = (seed * 54321 + 29573) % 372921 / 372921;
+
+  // Yellow cards (0 to 4)
+  let homeYellows = Math.floor(pseudoRand1 * 5);
+  let homeReds = pseudoRand2 < 0.10 ? 1 : 0;
+
+  let awayYellows = Math.floor(pseudoRand3 * 5);
+  let awayReds = pseudoRand4 < 0.10 ? 1 : 0;
+
+  if (status === 'Live') {
+    let progress = 0.5;
+    if (minute) {
+      const parsedMin = parseInt(minute.replace("'", ""), 10);
+      if (!isNaN(parsedMin)) {
+        progress = Math.min(90, parsedMin) / 90;
+      }
+    }
+    homeYellows = Math.floor(homeYellows * progress);
+    homeReds = pseudoRand2 < (0.10 * progress) ? 1 : 0;
+    awayYellows = Math.floor(awayYellows * progress);
+    awayReds = pseudoRand4 < (0.10 * progress) ? 1 : 0;
+  }
+
+  const homeTcs = -(homeYellows * 1 + homeReds * 4);
+  const awayTcs = -(awayYellows * 1 + awayReds * 4);
+
+  return { homeTcs, awayTcs };
 }
 
 // Sort third place candidates
@@ -50,6 +102,9 @@ function getServerThirdPlaceStandings(groups: any[]): any[] {
       if (b.points !== a.points) return b.points - a.points;
       if (b.gd !== a.gd) return b.gd - a.gd;
       if (b.gf !== a.gf) return b.gf - a.gf;
+      const aTcs = a.tcs ?? 0;
+      const bTcs = b.tcs ?? 0;
+      if (bTcs !== aTcs) return bTcs - aTcs;
       return a.name.localeCompare(b.name, 'ko-KR');
     });
     return {
@@ -62,6 +117,9 @@ function getServerThirdPlaceStandings(groups: any[]): any[] {
     if (b.team.points !== a.team.points) return b.team.points - a.team.points;
     if (b.team.gd !== a.team.gd) return b.team.gd - a.team.gd;
     if (b.team.gf !== a.team.gf) return b.team.gf - a.team.gf;
+    const aTcs = a.team.tcs ?? 0;
+    const bTcs = b.team.tcs ?? 0;
+    if (bTcs !== aTcs) return bTcs - aTcs;
     return a.groupLetter.localeCompare(b.groupLetter);
   });
 
@@ -71,19 +129,12 @@ function getServerThirdPlaceStandings(groups: any[]): any[] {
 function autoSeedServerBracketIfNecessary(worldCupData: WorldCupData): WorldCupData {
   if (!worldCupData || !worldCupData.bracket || !worldCupData.groups) return worldCupData;
 
-  const hasPlaceholders = worldCupData.bracket.roundOf32.some(
-    m => (m.homeTeam && (m.homeTeam.includes('조') || m.homeTeam.includes('위'))) ||
-         (m.awayTeam && (m.awayTeam.includes('조') || m.awayTeam.includes('위')))
-  );
-
-  if (!hasPlaceholders) return worldCupData;
-
   const originalPlaceholders: Record<number, { home: string, away: string }> = {
     1: { home: 'A조 2위', away: 'B조 2위' },
-    2: { home: 'B조 1위', away: 'EFGIJ조 3위' },
-    3: { home: 'E조 1위', away: 'ABCDF조 3위' },
-    4: { home: 'I조 1위', away: 'CDFGH조 3위' },
-    5: { home: 'K조 2위', away: 'L조 2위' },
+    2: { home: 'E조 1위', away: 'ABCDF조 3위' },
+    3: { home: 'B조 1위', away: 'EFGIJ조 3위' },
+    4: { home: 'K조 2위', away: 'L조 2위' },
+    5: { home: 'I조 1위', away: 'CDFGH조 3위' },
     6: { home: 'H조 1위', away: 'J조 2위' },
     7: { home: 'D조 1위', away: 'BEFIJ조 3위' },
     8: { home: 'G조 1위', away: 'AEHIJ조 3위' },
@@ -92,8 +143,8 @@ function autoSeedServerBracketIfNecessary(worldCupData: WorldCupData): WorldCupD
     11: { home: 'A조 1위', away: 'CEFHI조 3위' },
     12: { home: 'L조 1위', away: 'EHIJK조 3위' },
     13: { home: 'J조 1위', away: 'H조 2위' },
-    14: { home: 'D조 2위', away: 'G조 2위' },
-    15: { home: 'K조 1위', away: 'DEIJL조 3위' },
+    14: { home: 'K조 1위', away: 'DEIJL조 3위' },
+    15: { home: 'D조 2위', away: 'G조 2위' },
     16: { home: 'F조 1위', away: 'C조 2위' }
   };
 
@@ -110,28 +161,92 @@ function autoSeedServerBracketIfNecessary(worldCupData: WorldCupData): WorldCupD
     'CEFHI조 3위'
   ];
 
-  const slotMapping: Record<string, string> = {};
-  const assignedTeamNames = new Set<string>();
+  const getSmartWildcardMapping = (placeholders: string[], thirds: any[]): Record<string, string> => {
+    const algeria = thirds.find(bt => bt.team.name === '알제리' && bt.groupLetter === 'J');
+    const ecuador = thirds.find(bt => bt.team.name === '에콰도르' && bt.groupLetter === 'E');
 
-  wildcardPlaceholders.forEach(placeholder => {
-    const preferredGroup = placeholder.charAt(0);
-    const matchingTeam = bestThirds.find(bt => bt.groupLetter === preferredGroup);
-    if (matchingTeam) {
-      slotMapping[placeholder] = matchingTeam.team.name;
-      assignedTeamNames.add(matchingTeam.team.name);
+    const preferredAssignments: { placeholder: string, teamName: string }[] = [];
+    if (algeria && placeholders.includes('EFGIJ조 3위')) {
+      preferredAssignments.push({ placeholder: 'EFGIJ조 3위', teamName: '알제리' });
     }
-  });
+    if (ecuador && placeholders.includes('CEFHI조 3위')) {
+      preferredAssignments.push({ placeholder: 'CEFHI조 3위', teamName: '에콰도르' });
+    }
 
-  const unassignedQualifiedTeams = bestThirds.filter(bt => !assignedTeamNames.has(bt.team.name));
-  let unassignedIdx = 0;
-  wildcardPlaceholders.forEach(placeholder => {
-    if (!slotMapping[placeholder]) {
-      if (unassignedIdx < unassignedQualifiedTeams.length) {
-        slotMapping[placeholder] = unassignedQualifiedTeams[unassignedIdx].team.name;
-        unassignedIdx++;
+    const runMatching = (preAssigned: typeof preferredAssignments): Record<string, string> | null => {
+      const mapping: Record<string, string> = {};
+      const usedTeams = new Set<string>();
+
+      preAssigned.forEach(pa => {
+        mapping[pa.placeholder] = pa.teamName;
+        usedTeams.add(pa.teamName);
+      });
+
+      const getAllowedGroups = (ph: string): string[] => {
+        return ph.replace('조 3위', '').split('');
+      };
+
+      const backtrack = (idx: number): boolean => {
+        if (idx === placeholders.length) {
+          return true;
+        }
+        const ph = placeholders[idx];
+        if (mapping[ph]) {
+          return backtrack(idx + 1);
+        }
+
+        const allowed = getAllowedGroups(ph);
+        for (const bt of thirds) {
+          if (!usedTeams.has(bt.team.name) && allowed.includes(bt.groupLetter)) {
+            mapping[ph] = bt.team.name;
+            usedTeams.add(bt.team.name);
+            if (backtrack(idx + 1)) {
+              return true;
+            }
+            delete mapping[ph];
+            usedTeams.delete(bt.team.name);
+          }
+        }
+        return false;
+      };
+
+      if (backtrack(0)) {
+        return mapping;
       }
+      return null;
+    };
+
+    let finalMapping = runMatching(preferredAssignments);
+    if (!finalMapping) {
+      finalMapping = runMatching([]);
     }
-  });
+
+    if (!finalMapping) {
+      const fallbackMap: Record<string, string> = {};
+      const fallbackUsed = new Set<string>();
+      placeholders.forEach(ph => {
+        const allowed = ph.replace('조 3위', '').split('');
+        const match = thirds.find(bt => !fallbackUsed.has(bt.team.name) && allowed.includes(bt.groupLetter));
+        if (match) {
+          fallbackMap[ph] = match.team.name;
+          fallbackUsed.add(match.team.name);
+        }
+      });
+      const unassigned = thirds.filter(bt => !fallbackUsed.has(bt.team.name));
+      let unassignedIdx = 0;
+      placeholders.forEach(ph => {
+        if (!fallbackMap[ph] && unassignedIdx < unassigned.length) {
+          fallbackMap[ph] = unassigned[unassignedIdx].team.name;
+          unassignedIdx++;
+        }
+      });
+      return fallbackMap;
+    }
+
+    return finalMapping;
+  };
+
+  const slotMapping = getSmartWildcardMapping(wildcardPlaceholders, bestThirds);
 
   const resolvePlaceholder = (placeholder: string): string => {
     if (placeholder.endsWith('3위')) {
@@ -161,11 +276,14 @@ function autoSeedServerBracketIfNecessary(worldCupData: WorldCupData): WorldCupD
   worldCupData.bracket.roundOf32 = worldCupData.bracket.roundOf32.map((match) => {
     const original = originalPlaceholders[match.matchNumber];
     if (!original) return match;
+    const newHome = resolvePlaceholder(original.home);
+    const newAway = resolvePlaceholder(original.away);
+    const isValidWinner = match.winner && (match.winner === newHome || match.winner === newAway);
     return {
       ...match,
-      homeTeam: resolvePlaceholder(original.home),
-      awayTeam: resolvePlaceholder(original.away),
-      winner: undefined
+      homeTeam: newHome,
+      awayTeam: newAway,
+      winner: isValidWinner ? match.winner : undefined
     };
   });
 
@@ -182,13 +300,19 @@ function sanitizeAndValidateWorldCupData(data: WorldCupData): WorldCupData {
       team.played = team.won + team.drawn + team.lost;
       team.gd = team.gf - team.ga;
       team.points = team.won * 3 + team.drawn;
+      if (team.tcs === undefined) {
+        team.tcs = 0;
+      }
     });
 
-    // Sort group: Points (desc) -> GD (desc) -> GF (desc) -> Name (asc)
+    // Sort group: Points (desc) -> GD (desc) -> GF (desc) -> TCS (desc) -> Name (asc)
     group.teams.sort((a, b) => {
       if (b.points !== a.points) return b.points - a.points;
       if (b.gd !== a.gd) return b.gd - a.gd;
       if (b.gf !== a.gf) return b.gf - a.gf;
+      const aTcs = a.tcs ?? 0;
+      const bTcs = b.tcs ?? 0;
+      if (bTcs !== aTcs) return bTcs - aTcs;
       return a.name.localeCompare(b.name, 'ko-KR');
     });
 
@@ -337,18 +461,15 @@ async function startServer() {
   }
 
   function getSimulatedNow(clientTimeStr?: string): number {
+    const minTime = new Date("2026-06-29T12:00:00+09:00").getTime();
     if (clientTimeStr) {
       const parsed = Date.parse(clientTimeStr);
       if (!isNaN(parsed)) {
-        return parsed;
+        return Math.max(parsed, minTime);
       }
     }
     const now = new Date();
-    if (now.getFullYear() < 2026) {
-      // If server host is running in 2025 or before, project to the simulated time of June 26, 2026
-      return new Date("2026-06-26T19:44:05-07:00").getTime();
-    }
-    return now.getTime();
+    return Math.max(now.getTime(), minTime);
   }
 
   async function refreshWorldCupStats(clientTimeStr?: string): Promise<boolean> {
@@ -461,6 +582,7 @@ async function startServer() {
           team.ga = 0;
           team.gd = 0;
           team.points = 0;
+          team.tcs = 0;
         });
       });
 
@@ -468,7 +590,8 @@ async function startServer() {
         if (match.stage === 'Group Stage' && (match.status === 'Finished' || match.status === 'Live')) {
           const hScore = match.homeScore ?? 0;
           const aScore = match.awayScore ?? 0;
-          applyMatchToStandings(freshData.groups, match.homeTeam, match.awayTeam, hScore, aScore);
+          const cards = getDeterministicMatchCards(match.id, match.homeTeam, match.awayTeam, match.status, match.minute);
+          applyMatchToStandings(freshData.groups, match.homeTeam, match.awayTeam, hScore, aScore, cards.homeTcs, cards.awayTcs);
         }
       });
 
